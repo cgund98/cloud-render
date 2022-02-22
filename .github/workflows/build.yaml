@@ -21,6 +21,7 @@ jobs:
       run: |
         python -m pip install -r client/requirements.txt
         python -m pip install -r server/requirements.txt
+        python -m pip install pylint==2.12.2
 
     - name: Check formatting
       if: always()
