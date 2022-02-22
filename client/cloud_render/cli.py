@@ -32,7 +32,7 @@ def status():
     if stack is None:
         typer.echo("Stack not currently deployed.")
 
-    elif stack.status == "CREATE_COMPLETE":
+    elif stack.status in ("CREATE_COMPLETE", "UPDATE_COMPLETE"):
         typer.echo("Stack is ready!")
 
     else:

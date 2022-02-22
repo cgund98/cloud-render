@@ -42,7 +42,7 @@ ADD server/requirements.txt /tmp/requirements.txt
 RUN python -m pip install -r /tmp/requirements.txt --no-cache-dir
 
 # Copy python scripts
-ADD server/cloud-render /app
+ADD server/cloud_render /app
 
 # Entrypoint
 ENTRYPOINT ["python", "/app/__main__.py"]

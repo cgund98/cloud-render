@@ -17,6 +17,7 @@ from config import DEPLOYMENT, MIN_CPUS, GPU_INSTANCE_TYPES, CPU_INSTANCE_TYPES
 # Path of script
 script_path = os.path.dirname(os.path.realpath(__file__))
 
+
 class Stack(BaseModel):
     """
     Data model of a CloudRender CloudFormation stack
@@ -40,18 +41,34 @@ class StackManager:
         self.stack_name = f"cloud-render-{DEPLOYMENT}"
 
         self.parameters = [
-            {"ParameterKey": "Prefix", "ParameterValue": DEPLOYMENT, "UsePreviousValue": False},
-            {"ParameterKey": "MinimumVCPUs", "ParameterValue": MIN_CPUS, "UsePreviousValue": False},
-            {"ParameterKey": "GpuInstanceTypes", "ParameterValue": GPU_INSTANCE_TYPES, "UsePreviousValue": False},
-            {"ParameterKey": "CpuInstanceTypes", "ParameterValue": CPU_INSTANCE_TYPES, "UsePreviousValue": False},
+            {
+                "ParameterKey": "Prefix",
+                "ParameterValue": DEPLOYMENT,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "MinimumVCPUs",
+                "ParameterValue": MIN_CPUS,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "GpuInstanceTypes",
+                "ParameterValue": GPU_INSTANCE_TYPES,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "CpuInstanceTypes",
+                "ParameterValue": CPU_INSTANCE_TYPES,
+                "UsePreviousValue": False,
+            },
         ]
 
     @staticmethod
     def _load_template() -> str:
         """Load the CloudFormation template from the file system."""
 
-        with open(f"{script_path}/../template.yaml", 'r') as f:
-            template = f.read()
+        with open(f"{script_path}/../template.yaml", "r", encoding="utf-8") as template_file:
+            template = template_file.read()
 
         return template
 
@@ -61,8 +78,12 @@ class StackManager:
         typer.echo(f"Will update existing stack {self.stack_name}...")
 
         template = self._load_template()
-        self.client.update_stack(StackName=self.stack_name, TemplateBody=template,
-            Capabilities=['CAPABILITY_NAMED_IAM'], Parameters=self.parameters)
+        self.client.update_stack(
+            StackName=self.stack_name,
+            TemplateBody=template,
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+            Parameters=self.parameters,
+        )
 
     def create(self) -> None:
         """Create a non-existent stack."""
@@ -70,8 +91,12 @@ class StackManager:
         typer.echo(f"Will create stack {self.stack_name}...")
 
         template = self._load_template()
-        self.client.create_stack(StackName=self.stack_name, TemplateBody=template,
-            Capabilities=['CAPABILITY_NAMED_IAM'], Parameters=self.parameters)
+        self.client.create_stack(
+            StackName=self.stack_name,
+            TemplateBody=template,
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+            Parameters=self.parameters,
+        )
 
     def create_or_update(self) -> None:
         """Update the stack if it exists, otherwise create it."""
@@ -87,32 +112,30 @@ class StackManager:
         else:
             self.update()
 
-    
     def delete(self) -> None:
         """Delete the existing stack."""
 
         typer.echo(f"Will delete stack {self.stack_name}...")
-        
+
         self.client.delete_stack(StackName=self.stack_name)
 
-        
     def get(self) -> Optional[Stack]:
         """Fetch the current stack from the AWS API."""
 
         try:
             response = self.client.describe_stacks(StackName=self.stack_name)
         except botocore.exceptions.ClientError as error:
-            if error.response['Error']['Code'] == 'ValidationError':
+            if error.response["Error"]["Code"] == "ValidationError":
                 return None
 
             raise error
 
-        if len(response['Stacks']) == 0:
+        if len(response["Stacks"]) == 0:
             return None
 
-        cur_stack = response['Stacks'][0]
+        cur_stack = response["Stacks"][0]
         parsed_stack = {
-            "name": cur_stack['StackName'],
+            "name": cur_stack["StackName"],
             "status": cur_stack["StackStatus"],
             "gpu_queue": "",
             "cpu_queue": "",
