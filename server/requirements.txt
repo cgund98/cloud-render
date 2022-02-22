@@ -1,0 +1,4 @@
+boto3==1.21.4
+typer==0.4.0
+wheel==0.37.1
+pathlib==1.0.1

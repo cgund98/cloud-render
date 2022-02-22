@@ -1,0 +1,44 @@
+from ubuntu:focal
+
+# Install apt dependendencies
+RUN apt-get update && \
+	apt-get install -y \
+		curl \
+		libfreetype6 \
+		libglu1-mesa \
+		libxi6 \
+		libxrender1 \
+		xz-utils \
+        python3.8-venv && \
+	apt-get -y autoremove && \
+	rm -rf /var/lib/apt/lists/*
+
+# Download blender
+ENV BLENDER_MAJOR 3.0
+ENV BLENDER_VERSION 3.0.1
+ENV BLENDER_URL https://download.blender.org/release/Blender${BLENDER_MAJOR}/blender-${BLENDER_VERSION}-linux-x64.tar.xz
+
+RUN curl -L ${BLENDER_URL} | tar -xJ -C /usr/local/ && \
+	mv /usr/local/blender-${BLENDER_VERSION}-linux-x64 /usr/local/blender
+ENV PATH=/usr/local/blender:$PATH
+
+# Create user
+RUN mkdir /home/render && \
+    groupadd -g 8777 -r render && \
+    useradd --no-log-init -r -g render render && \
+    chown render /home/render
+USER render
+
+# Create virtual environment
+RUN python3.8 -m venv $HOME/venv
+ENV PATH=/home/render/venv/bin:$PATH
+
+# Install python dependencies
+ADD server/requirements.txt /tmp/requirements.txt
+RUN python -m pip install -r /tmp/requirements.txt --no-cache-dir
+
+# Copy python scripts
+ADD server/cloud-render /app
+
+# Entrypoint
+ENTRYPOINT ["python", "/app/__main__.py"]
