@@ -1,0 +1,591 @@
+Description: A CloudFormation template for deploying Cloud Render Batch jobs to AWS.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Metadata
+        Parameters:
+          - Prefix
+          - Version
+      - Label:
+          default: Instance Types (Advanced)
+        Parameters:
+          - GpuInstanceTypes
+          - CpuInstanceTypes
+      - Label:
+          default: Batch Compute Parameters (Advanced)
+        Parameters:
+          - MinimumVCPUs
+          - DesiredVCPUs
+          - MaximumVCPUs
+          - CidrRange
+          - SpotFleetBidPercentage
+      - Label:
+          default: Container Image Parameters (Advanced)
+        Parameters:
+          - PyTorchRepositoryName
+          - ImageTag
+          - GPUInstanceVCPUs
+          - GPUInstanceMemory
+          - GPUInstanceStorage
+          - CPUInstanceVCPUs
+          - CPUInstanceMemory
+          - CPUInstanceStorage
+    ParameterLabels:
+      Prefix:
+        default: Prefix
+      Version:
+        default: Version
+      SpotFleetBidPercentage:
+        default: Spot Fleet Bid Percentage
+      MinimumVCPUs:
+        default: Minimum vCPU Count
+      DesiredVCPUs:
+        default: Desired vCPU Count
+      MaximumVCPUs:
+        default: Maximum vCPU Count
+      CidrRange:
+        default: CIDR Range
+      GpuInstanceTypes:
+        default: Instance Types (GPU)
+      CpuInstanceTypes:
+        default: Instance Types (CPU)
+      GPUInstanceVCPUs:
+        default: GPU vCPU Limit
+      GPUInstanceMemory:
+        default: GPU Memory Limit
+      GPUInstanceStorage:
+        default: GPU Instance Storage
+      CPUInstanceVCPUs:
+        default: CPU vCPU Limit
+      CPUInstanceMemory:
+        default: CPU Memory Limit
+      CPUInstanceStorage:
+        default: CPU Instance Storage
+      PyTorchRepositoryName:
+        default: Repository Name (PyTorch)
+      ImageTag:
+        default: Image Tag
+
+Parameters:
+  Prefix:
+    Type: String
+    Default: ""
+    Description: >
+      Optional lowercase identifier to use for namespacing your resources (e.g.
+      CloudRenderIamRole becomes yournameCloudRenderIamRole). You need to do this if you
+      are setting up multiple RV stacks within one account.
+    MaxLength: 12
+    AllowedPattern: ^[a-z0-9]*$
+    ConstraintDescription: must only contain lowercase letters and numbers
+  
+  Version:
+    Type: String
+    Default: "test"
+    Description: Deployment version
+    MaxLength: 12
+    AllowedPattern: ^[a-z0-9.]*$
+
+  SpotFleetBidPercentage:
+    Type: Number
+    Default: 60
+    Description: >
+      Minimum percentage that a Spot Instance price must be when compared with
+      the On-Demand price for that instance type before instances are launched
+
+  MinimumVCPUs:
+    Type: Number
+    Default: 4
+    Description: The minimum number of EC2 vCPUs that an environment should maintain
+
+  MinimumGPUVCPUs:
+    Type: Number
+    Default: 0
+    Description: The minimum number of EC2 vCPUs that GPU environments should maintain
+
+  DesiredVCPUs:
+    Type: Number
+    Default: 0
+    Description: The desired number of EC2 vCPUS in the compute environment
+
+  MaximumVCPUs:
+    Type: Number
+    Default: 80
+    Description: The maximum number of EC2 vCPUs that an environment can reach
+
+  MaximumGPUVCPUs:
+    Type: Number
+    Default: 24
+    Description: The maximum number of EC2 vCPUs that GPU environments can reach
+
+  CidrRange:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: >
+      Restrict inbound traffic to your EC2 instance to requests coming from
+      a specific CIDR range
+    # Pattern taken from: https://www.regexpal.com/94836
+    AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$
+    ConstraintDescription: must be a valid IPv4 address or CIDR range
+
+  GpuInstanceTypes:
+    Type: List<String>
+    Default: g4dn
+    Description: >
+      A comma-separated list of GPU-enabled instance types
+
+  CpuInstanceTypes:
+    Type: List<String>
+    Default: r5
+    Description: >
+      A comma-separated list of CPU-enabled instance types
+
+  GPUInstanceVCPUs:
+    Type: Number
+    Default: 4
+    Description: Number of vCPUs reserved for the container by the task definition for GPU instances (4 should be used for P2 instances)
+
+  GPUInstanceMemory:
+    Type: Number
+    Default: 14000
+    Description: The hard limit (in MB) of memory to present to the container for GPU instances (40000 should be used for P2 instances)
+
+  GPUInstanceStorage:
+    Type: Number
+    Default: 50
+    Description: The amount of EBS storage (in GB) to use for the GPU instance root volume.
+
+  CPUInstanceVCPUs:
+    Type: Number
+    Default: 4
+    Description: Number of vCPUs reserved for the container by the task definition for CPU instances
+
+  CPUInstanceMemory:
+    Type: Number
+    Default: 14000
+    Description: The hard limit (in MB) of memory to present to the container for CPU instances
+
+  CPUInstanceStorage:
+    Type: Number
+    Default: 50
+    Description: The amount of EBS storage (in GB) to use for the CPU instance root volume.
+
+  PyTorchRepositoryName:
+    Type: String
+    Default: ""
+    Description: >
+      (Optional) Specifies the name of an ECR repository to create for use in
+      pushing and pulling images -- if empty, pulls the latest
+      PyTorch-based Cloud Render container image from Quay.io instead
+
+  ImageTag:
+    Type: String
+    Default: ""
+    Description: >
+      (Optional) Tag of the CPU and GPU container image to retrieve from ECR -- required
+      if CpuRepositoryName or GpuRepositoryName is not empty
+
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.172.10.0/16
+
+  PublicSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.172.110.0/24
+
+  PublicSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+    Default: 10.172.111.0/24
+
+  PrivateSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.172.120.0/24
+
+  PrivateSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+    Default: 10.172.121.0/24
+
+Conditions:
+  UseHostedPyTorchImage: !Equals [!Ref PyTorchRepositoryName, ""]
+  UseCustomPyTorchImage: !Not [!Equals [!Ref PyTorchRepositoryName, ""]]
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub Cloud Render ${Prefix}
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub Cloud Render ${Prefix}
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub Cloud Render ${Prefix} Public Subnet (AZ1)
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub Cloud Render ${Prefix} Public Subnet (AZ2)
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub Cloud Render ${Prefix} Private Subnet (AZ1)
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub Cloud Render ${Prefix} Private Subnet (AZ2)
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub Cloud Render ${Prefix} Public Routes
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  NoIngressSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "no-ingress-sg"
+      GroupDescription: "Security group with no ingress rule"
+      VpcId: !Ref VPC
+
+  BatchServiceIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ["", [!Ref Prefix, "CloudRenderBatchRole"]]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - batch.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+
+  SpotFleetIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ["", [!Ref Prefix, "CloudRenderSpotFleetRole"]]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - spotfleet.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
+
+  BatchInstanceIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ["", [!Ref Prefix, "CloudRenderInstanceRole"]]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  BatchInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref BatchInstanceIAMRole
+      InstanceProfileName:
+        !Join ["", [!Ref Prefix, "CloudRenderInstanceProfile"]]
+
+  ContainerInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupName: !Join ["", [!Ref Prefix, "CloudRenderSecurityGroup"]]
+      GroupDescription:
+        !Join ["", ["Security group for ", !Ref Prefix, " (Cloud Render)"]]
+      SecurityGroupIngress:
+        - FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+          CidrIp: !Ref CidrRange
+        - FromPort: 6006
+          ToPort: 6006
+          IpProtocol: tcp
+          CidrIp: !Ref CidrRange
+      SecurityGroupEgress:
+        - FromPort: 0
+          ToPort: 65535
+          IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join ["", [!Ref Prefix, "CloudRenderSecurityGroup"]]
+
+  PyTorchRepository:
+    Type: AWS::ECR::Repository
+    Condition: UseCustomPyTorchImage
+    Properties:
+      RepositoryName: !Ref PyTorchRepositoryName
+
+  GpuLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Join ["", [!Ref Prefix, "CloudRenderGpuLaunchTemplate"]]
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeType: gp2
+              VolumeSize: !Ref GPUInstanceStorage
+
+  GpuComputeEnvironment:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      ComputeEnvironmentName:
+        !Join ["", [!Ref Prefix, "CloudRenderGpuComputeEnvironment"]]
+      Type: Managed
+      State: ENABLED
+      ServiceRole: !Ref BatchServiceIAMRole
+      ComputeResources:
+        Type: SPOT
+        BidPercentage: !Ref SpotFleetBidPercentage
+        MinvCpus: !Ref MinimumGPUVCPUs
+        DesiredvCpus: !Ref MinimumGPUVCPUs
+        MaxvCpus: !Ref MaximumGPUVCPUs
+        SpotIamFleetRole: !Ref SpotFleetIAMRole
+        InstanceRole: !Ref BatchInstanceProfile
+        InstanceTypes: !Ref GpuInstanceTypes
+        SecurityGroupIds:
+          - !Ref ContainerInstanceSecurityGroup
+        Subnets: [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
+        LaunchTemplate:
+          LaunchTemplateId: !Ref GpuLaunchTemplate
+        Tags:
+          Name: !Join ["", [!Ref Prefix, "CloudRenderGpuComputeEnvironment"]]
+          ComputeEnvironment: Cloud Render
+
+  CpuLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Join ["", [!Ref Prefix, "CloudRenderCpuLaunchTemplate"]]
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeType: gp2
+              VolumeSize: !Ref CPUInstanceStorage
+
+  CpuComputeEnvironment:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      ComputeEnvironmentName:
+        !Join ["", [!Ref Prefix, "CloudRenderCpuComputeEnvironment"]]
+      Type: Managed
+      State: ENABLED
+      ServiceRole: !Ref BatchServiceIAMRole
+      ComputeResources:
+        Type: SPOT
+        BidPercentage: !Ref SpotFleetBidPercentage
+        MinvCpus: !Ref MinimumVCPUs
+        DesiredvCpus: !Ref MinimumVCPUs
+        MaxvCpus: !Ref MaximumVCPUs
+        SpotIamFleetRole: !Ref SpotFleetIAMRole
+        InstanceRole: !Ref BatchInstanceProfile
+        InstanceTypes: !Ref CpuInstanceTypes
+        SecurityGroupIds:
+          - !Ref ContainerInstanceSecurityGroup
+        Subnets: [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]
+        LaunchTemplate:
+          LaunchTemplateId: !Ref CpuLaunchTemplate
+        Tags:
+          Name: !Join ["", [!Ref Prefix, "CloudRenderCpuComputeEnvironment"]]
+          ComputeEnvironment: Cloud Render
+
+  GpuJobQueue:
+    Type: AWS::Batch::JobQueue
+    Properties:
+      JobQueueName: !Join ["", [!Ref Prefix, "CloudRenderGpuJobQueue"]]
+      Priority: 1
+      State: ENABLED
+      ComputeEnvironmentOrder:
+        - ComputeEnvironment: !Ref GpuComputeEnvironment
+          Order: 1
+
+  CpuJobQueue:
+    Type: AWS::Batch::JobQueue
+    Properties:
+      JobQueueName: !Join ["", [!Ref Prefix, "CloudRenderCpuJobQueue"]]
+      Priority: 1
+      State: ENABLED
+      ComputeEnvironmentOrder:
+        - ComputeEnvironment: !Ref CpuComputeEnvironment
+          Order: 1
+
+  Bucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub cloud-render-${Prefix}
+
+  ContainerIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ["", [!Ref Prefix, "CloudRenderContainerRole"]]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+      Policies:
+      - PolicyName: !Sub ${Prefix}CloudRenderReadWriteBucket
+        PolicyDocument:
+          Statement:
+            - Effect: Allow
+              Action: "s3:ListBucket"
+              Resource: !GetAtt Bucket.Arn
+            - Effect: Allow
+              Action: "s3:*Object"
+              Resource: !Join ["", [!GetAtt Bucket.Arn, "/*"]]
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  CloudRenderCpuRenderDefinition:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: Container
+      JobDefinitionName:
+        !Join ["", [!Ref Prefix, "CloudRenderCpuRender"]]
+      ContainerProperties:
+        Image: !Sub cgundlach13/cloud-render-server:${Version}
+        Command: ["Ref::job", "--frame", "Ref::frame", "--bucket-name", !Sub "cloud-render-${Prefix}"]
+        Vcpus: !Ref CPUInstanceVCPUs
+        Memory: !Ref CPUInstanceMemory
+        JobRoleArn: !GetAtt ContainerIAMRole.Arn
+        Volumes:
+          - Host:
+              SourcePath: /tmp/cache
+            Name: cache
+        MountPoints:
+          - ContainerPath: /cache
+            ReadOnly: false
+            SourceVolume: cache
+        ReadonlyRootFilesystem: false
+        Privileged: true
+
+  CloudRenderGpuRenderDefinition:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: Container
+      JobDefinitionName:
+        !Join ["", [!Ref Prefix, "CloudRenderGpuRender"]]
+      ContainerProperties:
+        Image: !Sub cgundlach13/cloud-render-server:${Version}
+        Command: ["Ref::job", "--frame", "Ref::frame", "--bucket-name", !Sub "cloud-render-${Prefix}"]
+        Vcpus: !Ref GPUInstanceVCPUs
+        JobRoleArn: !GetAtt ContainerIAMRole.Arn
+        ResourceRequirements:
+          - Type: "GPU"
+            Value: "1"
+        Memory: !Ref GPUInstanceMemory
+        Volumes:
+          - Host:
+              SourcePath: /tmp/cache
+            Name: cache
+        MountPoints:
+          - ContainerPath: /cache
+            ReadOnly: false
+            SourceVolume: cache
+        ReadonlyRootFilesystem: false
+        Privileged: true
+
+Outputs:
+  CPUQueue:
+    Description: Cloud render CPU job queue name
+    Value: !Ref CpuJobQueue
+  GPUQueue:
+    Description: Cloud render GPU job queue name
+    Value: !Ref GpuJobQueue

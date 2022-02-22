@@ -130,4 +130,6 @@ dmypy.json
 
 # AWS CDK
 cdk.out
-client/template.yaml
+
+# VS code
+.vscode
