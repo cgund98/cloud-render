@@ -23,12 +23,14 @@ jobs:
         python -m pip install -r server/requirements.txt
 
     - name: Check formatting
+      if: always()
       uses: psf/black@stable
       with:
         option: "-l 120"
         src: "."
 
     - name: Check style
+      if: always()
       run: python -m pylint server client
 
   build:

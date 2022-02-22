@@ -67,7 +67,9 @@ class StackManager:
     def _load_template() -> str:
         """Load the CloudFormation template from the file system."""
 
-        with open(f"{script_path}/../template.yaml", "r", encoding="utf-8") as template_file:
+        with open(
+            f"{script_path}/../template.yaml", "r", encoding="utf-8"
+        ) as template_file:
             template = template_file.read()
 
         return template
