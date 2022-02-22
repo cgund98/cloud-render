@@ -540,7 +540,7 @@ Resources:
       JobDefinitionName:
         !Join ["", [!Ref Prefix, "CloudRenderCpuRender"]]
       ContainerProperties:
-        Image: !Sub cgundlach13/cloud-render-server:${Version}
+        Image: !Sub cgundlach13/cloud-render-server-cpu:${Version}
         Command: ["Ref::job", "--frame", "Ref::frame", "--bucket-name", !Sub "cloud-render-${Prefix}"]
         Vcpus: !Ref CPUInstanceVCPUs
         Memory: !Ref CPUInstanceMemory
@@ -563,7 +563,7 @@ Resources:
       JobDefinitionName:
         !Join ["", [!Ref Prefix, "CloudRenderGpuRender"]]
       ContainerProperties:
-        Image: !Sub cgundlach13/cloud-render-server:${Version}
+        Image: !Sub cgundlach13/cloud-render-server-gpu:${Version}
         Command: ["Ref::job", "--frame", "Ref::frame", "--bucket-name", !Sub "cloud-render-${Prefix}"]
         Vcpus: !Ref GPUInstanceVCPUs
         JobRoleArn: !GetAtt ContainerIAMRole.Arn
