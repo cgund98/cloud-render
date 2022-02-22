@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# AWS CDK
+cdk.out
+client/template.yaml
