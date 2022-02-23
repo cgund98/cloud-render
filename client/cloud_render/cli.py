@@ -83,9 +83,30 @@ def list_jobs():
 
     jobs = jobs_controller.list_jobs()
 
-    typer.echo("ID\tSTART\tEND\tSTATUS\t\tFILE_NAME")
+    typer.echo("ID\tCREATED_AT\t\t\tSTART\tEND\tSTATUS\t\tFILE_NAME")
     for job in jobs:
-        typer.echo(f"{job.job_id}\t{job.start_frame}\t{job.end_frame}\t{job.status.ljust(10)}\t{job.file_name}")
+        typer.echo(f"{job.job_id}\t{job.creation_date}\t{job.start_frame}\t{job.end_frame}\t{job.status.ljust(10)}\t{job.file_name}")
+
+@app.command()
+def describe_job(job_id: str = typer.Argument(...)):
+    """Fetch details on a specific job"""
+
+    job = jobs_controller.get_job(job_id)
+
+    if job is None:
+        typer.echo(f"No job found with id: {job_id}", color=typer.colors.RED)
+
+    typer.echo(f"Job ID: {job.job_id}")
+    typer.echo(f"File name: {job.file_name}")
+    typer.echo(f"Status: {job.status}")
+    typer.echo(f"Created at: {job.creation_date}")
+    typer.echo(f"Frames: {job.start_frame}-{job.end_frame}")
+
+    typer.echo("\nBatch Jobs:")
+    typer.echo("FRAME\tSTATUS\t\tJOB_NAME")
+    for batch_job in job.children.values():
+        typer.echo(f"{batch_job.frame}\t{batch_job.status.ljust(10)}\t{batch_job.name}")
+
 
 
 if __name__ == "__main__":

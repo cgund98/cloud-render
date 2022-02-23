@@ -184,7 +184,7 @@ class JobsController:
         return job
 
     def list_jobs(self) -> List[Job]:
-        """List available jobs"""
+        """List available jobs in descending order of their creation date"""
 
         # Reload state
         self._load_state()
@@ -194,9 +194,12 @@ class JobsController:
             if job.status not in (STATUS_SUCCEEDED, STATUS_ERROR):
                 self.state[job.job_id] = self._refresh_job(job)
 
+        # Persist state
+        self._persist_state()
+
         # Parse jobs
         jobs = list(self.state.values())
-        jobs = sorted(jobs, key=lambda job: job.creation_date)
+        jobs = sorted(jobs, key=lambda job: job.creation_date, reverse=True)
 
         return jobs
 
@@ -243,5 +246,26 @@ class JobsController:
             job.status = STATUS_ERROR
         else:
             job.status = STATUS_RUNNING
+
+        return job
+
+    def get_job(self, job_id: str) -> Optional[Job]:
+        """Fetch a job from state by its job ID"""
+
+        # Refresh state
+        self._load_state()
+
+        # Return None if not found
+        if job_id not in self.state:
+            return None
+
+        job = self.state[job_id]
+
+        # Update job
+        job = self._refresh_job(job)
+
+        # Persist state
+        self.state[job_id] = job
+        self._persist_state()
 
         return job
