@@ -82,7 +82,6 @@ Parameters:
   
   Version:
     Type: String
-    Default: "test"
     Description: Deployment version
     MaxLength: 12
     AllowedPattern: ^[a-z0-9.]*$

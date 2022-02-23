@@ -51,13 +51,9 @@ def save_results(job_name: str, bucket_name: str) -> int:
 
 
 def main(
-    job_name: str = typer.Argument(
-        ..., help="Name of the blend file to attempt to render"
-    ),
+    job_name: str = typer.Argument(..., help="Name of the blend file to attempt to render"),
     frame: int = typer.Option(..., help="Framer number to render"),
-    bucket_name: str = typer.Option(
-        ..., help="Name of the S3 bucket to use for storage"
-    ),
+    bucket_name: str = typer.Option(..., help="Name of the S3 bucket to use for storage"),
 ) -> None:
     """Entrypoint method"""
 

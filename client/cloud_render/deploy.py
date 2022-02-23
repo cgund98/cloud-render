@@ -1,5 +1,5 @@
 """
-Deploy cloudformation template
+Logic pertaining to managing the CloudFormation deployment.
 """
 
 from typing import Sequence, Optional
@@ -12,9 +12,9 @@ import typer
 
 from pydantic import BaseModel
 
-from config import DEPLOYMENT, MIN_CPUS, GPU_INSTANCE_TYPES, CPU_INSTANCE_TYPES
+from config import DEPLOYMENT, MIN_CPUS, GPU_INSTANCE_TYPES, CPU_INSTANCE_TYPES, VERSION
 
-# Path of script
+# Path of script. Used to locate template.yaml
 script_path = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -40,10 +40,16 @@ class StackManager:
         self.client = client
         self.stack_name = f"cloud-render-{DEPLOYMENT}"
 
+        # Stack parameters
         self.parameters = [
             {
                 "ParameterKey": "Prefix",
                 "ParameterValue": DEPLOYMENT,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "Version",
+                "ParameterValue": VERSION,
                 "UsePreviousValue": False,
             },
             {
@@ -67,9 +73,7 @@ class StackManager:
     def _load_template() -> str:
         """Load the CloudFormation template from the file system."""
 
-        with open(
-            f"{script_path}/../template.yaml", "r", encoding="utf-8"
-        ) as template_file:
+        with open(f"{script_path}/template.yaml", "r", encoding="utf-8") as template_file:
             template = template_file.read()
 
         return template
@@ -79,13 +83,23 @@ class StackManager:
 
         typer.echo(f"Will update existing stack {self.stack_name}...")
 
-        template = self._load_template()
-        self.client.update_stack(
-            StackName=self.stack_name,
-            TemplateBody=template,
-            Capabilities=["CAPABILITY_NAMED_IAM"],
-            Parameters=self.parameters,
-        )
+        try:
+            template = self._load_template()
+            self.client.update_stack(
+                StackName=self.stack_name,
+                TemplateBody=template,
+                Capabilities=["CAPABILITY_NAMED_IAM"],
+                Parameters=self.parameters,
+            )
+
+            typer.echo("Stack updated")
+
+        except botocore.exceptions.ClientError as error:
+            if error.response["Error"]["Message"] == "No updates are to be performed.":
+                typer.echo("Stack already up to date.")
+
+            else:
+                raise error
 
     def create(self) -> None:
         """Create a non-existent stack."""
@@ -124,6 +138,7 @@ class StackManager:
     def get(self) -> Optional[Stack]:
         """Fetch the current stack from the AWS API."""
 
+        # Query AWS
         try:
             response = self.client.describe_stacks(StackName=self.stack_name)
         except botocore.exceptions.ClientError as error:
@@ -135,6 +150,7 @@ class StackManager:
         if len(response["Stacks"]) == 0:
             return None
 
+        # Parse response into a dictionary so Pydantic can read it
         cur_stack = response["Stacks"][0]
         parsed_stack = {
             "name": cur_stack["StackName"],
@@ -143,6 +159,7 @@ class StackManager:
             "cpu_queue": "",
         }
 
+        # Check if outputs are ready, and add them to parsed stack
         outputs = cur_stack.get("Outputs")
         if outputs:
             for output in outputs:
