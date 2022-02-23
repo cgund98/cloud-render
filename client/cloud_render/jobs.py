@@ -15,7 +15,7 @@ from pydantic import BaseModel
 import botocore
 import typer
 
-from config import (
+from cloud_render.config import (
     JOBS_STATE_FILE,
     BUCKET_NAME,
     JOB_DEF_CPU,

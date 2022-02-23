@@ -12,7 +12,7 @@ import typer
 
 from pydantic import BaseModel
 
-from config import DEPLOYMENT, MIN_CPUS, GPU_INSTANCE_TYPES, CPU_INSTANCE_TYPES, VERSION
+from cloud_render.config import DEPLOYMENT, MIN_CPUS, GPU_INSTANCE_TYPES, CPU_INSTANCE_TYPES, VERSION
 
 # Path of script. Used to locate template.yaml
 script_path = os.path.dirname(os.path.realpath(__file__))

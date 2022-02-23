@@ -133,3 +133,6 @@ cdk.out
 
 # VS code
 .vscode
+
+# AWS creds
+**/creds.json
