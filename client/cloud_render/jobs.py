@@ -41,6 +41,8 @@ class BatchJob(BaseModel):
     batch_id: str
     name: str
     status: Optional[str]
+    started_at: Optional[datetime]
+    stopped_at: Optional[datetime]
     frame: int
 
 
@@ -49,6 +51,7 @@ class Job(BaseModel):
 
     job_id: str
     creation_date: datetime
+    completion_date: Optional[datetime]
     children: Dict[int, BatchJob]
     start_frame: int
     end_frame: int
@@ -217,10 +220,21 @@ class JobsController:
         while cur_chunk < (len(children) // chunk_size) + 1:
             chunk_start, chunk_end = cur_chunk * chunk_size, (cur_chunk + 1) * chunk_size
 
+            # Request batch of jobs
             response = self.batch_client.describe_jobs(jobs=job_ids[chunk_start:chunk_end])
 
+            # Parse results
             for obj in response["jobs"]:
                 children[id_maps[obj["jobId"]]].status = obj["status"]
+
+                # Check if startedAt is set
+                if "startedAt" in obj:
+                    unix_ts = int(str(obj["startedAt"])[0:-3])
+                    children[id_maps[obj["jobId"]]].started_at = datetime.fromtimestamp(unix_ts)
+
+                if "stoppedAt" in obj:
+                    unix_ts = int(str(obj["stoppedAt"])[0:-3])
+                    children[id_maps[obj["jobId"]]].stopped_at = datetime.fromtimestamp(unix_ts)
 
             cur_chunk += 1
 
@@ -233,14 +247,22 @@ class JobsController:
         job.children = self._refresh_children(job.children)
 
         # Determine parent job's status
+        completion_date = None
         running = False
         ran_into_error = False
         for batch_job in job.children.values():
+            # Check if error encountered
             if batch_job.status == "FAILED":
                 ran_into_error = True
 
+            # Check if job is still running
             if batch_job.status in ("SUBMITTED", "PENDING", "RUNNABLE", "STARTING", "RUNNING"):
                 running = True
+
+            # Set completion time
+            if batch_job.stopped_at is not None:
+                if completion_date is None or completion_date < batch_job.stopped_at:
+                    completion_date = batch_job.stopped_at
 
         if not running and not ran_into_error:
             job.status = STATUS_SUCCEEDED
@@ -248,6 +270,8 @@ class JobsController:
             job.status = STATUS_ERROR
         else:
             job.status = STATUS_RUNNING
+
+        job.completion_date = completion_date
 
         return job
 

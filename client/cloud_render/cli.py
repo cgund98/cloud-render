@@ -106,6 +106,11 @@ def describe_job(job_id: str = typer.Argument(...)):
     typer.echo(f"File name: {job.file_name}")
     typer.echo(f"Status: {job.status}")
     typer.echo(f"Created at: {job.creation_date}")
+
+    if job.completion_date is not None:
+        duration = (job.completion_date - job.creation_date).total_seconds() // 60
+        typer.echo(f"Duration: {duration} minutes")
+
     typer.echo(f"Frames: {job.start_frame}-{job.end_frame}")
 
     typer.echo("\nBatch Jobs:")
