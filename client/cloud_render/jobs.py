@@ -24,7 +24,7 @@ from config import (
     JOB_QUEUE_GPU,
     STATUS_ERROR,
     STATUS_SUCCEEDED,
-    STATUS_RUNNING
+    STATUS_RUNNING,
 )
 from utils import DateTimeEncoder
 
@@ -215,12 +215,12 @@ class JobsController:
         # Iterate over chunks of 100 jobs maximum (limited by AWS)
         cur_chunk, chunk_size = 0, 100
         while cur_chunk < (len(children) // chunk_size) + 1:
-            chunk_start, chunk_end = cur_chunk*chunk_size, (cur_chunk+1)*chunk_size
-            
+            chunk_start, chunk_end = cur_chunk * chunk_size, (cur_chunk + 1) * chunk_size
+
             response = self.batch_client.describe_jobs(jobs=job_ids[chunk_start:chunk_end])
 
             for obj in response["jobs"]:
-                children[id_maps[obj['jobId']]].status = obj['status']
+                children[id_maps[obj["jobId"]]].status = obj["status"]
 
             cur_chunk += 1
 

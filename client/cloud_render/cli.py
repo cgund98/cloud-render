@@ -71,7 +71,7 @@ def create_job(
     """Create a new render job."""
 
     # Ensure blend file is valid
-    if not os.path.exists(blend_path) or blend_path.split('.')[-1] != "blend":
+    if not os.path.exists(blend_path) or blend_path.split(".")[-1] != "blend":
         typer.echo(f"No blend file found at path '{blend_path}'")
         typer.Exit(1)
 
@@ -87,7 +87,11 @@ def list_jobs():
 
     typer.echo("ID\tCREATED_AT\t\t\tSTART\tEND\tSTATUS\t\tFILE_NAME")
     for job in jobs:
-        typer.echo(f"{job.job_id}\t{job.creation_date}\t{job.start_frame}\t{job.end_frame}\t{job.status.ljust(10)}\t{job.file_name}")
+        typer.echo(
+            f"{job.job_id}\t{job.creation_date}\t{job.start_frame}\t"
+            f"{job.end_frame}\t{job.status.ljust(10)}\t{job.file_name}"
+        )
+
 
 @app.command()
 def describe_job(job_id: str = typer.Argument(...)):
