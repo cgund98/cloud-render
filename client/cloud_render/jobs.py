@@ -2,7 +2,7 @@
 Logic pertaining to creating and managing jobs.
 """
 
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
 from datetime import datetime
 import json
 import random
@@ -61,11 +61,13 @@ class JobsController:
     """The JobsController manages jobs"""
 
     s3_client: S3Client
+    bucket: Any
     batch_client: BatchClient
     state: Dict[str, Job]
 
-    def __init__(self, s3_client: S3Client, batch_client: BatchClient):
+    def __init__(self, s3_client: S3Client, bucket: Any, batch_client: BatchClient):
         self.s3_client = s3_client
+        self.bucket = bucket
         self.batch_client = batch_client
         self.state = {}
 
@@ -217,7 +219,7 @@ class JobsController:
             
             response = self.batch_client.describe_jobs(jobs=job_ids[chunk_start:chunk_end])
 
-            for i, obj in enumerate(response["jobs"]):
+            for obj in response["jobs"]:
                 children[id_maps[obj['jobId']]].status = obj['status']
 
             cur_chunk += 1
@@ -269,3 +271,25 @@ class JobsController:
         self._persist_state()
 
         return job
+
+    def delete_job(self, job: Job) -> None:
+        """Cancel a job and remove it from the state"""
+
+        # Refresh state
+        self._load_state()
+
+        # Cancel children
+        typer.echo("Cancelling batch jobs...")
+        for batch_job in job.children.values():
+            self.batch_client.cancel_job(jobId=batch_job.batch_id, reason="Canceled by user.")
+
+        # Remove S3 directory
+        typer.echo("Removing artifacts...")
+        self.bucket.objects.filter(Prefix=f"jobs/{job.job_id}").delete()
+
+        # Remove job from state
+        typer.echo("Delete job from state...")
+        del self.state[job.job_id]
+
+        # Persist state
+        self._persist_state()

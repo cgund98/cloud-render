@@ -8,6 +8,7 @@ import boto3
 
 from deploy import StackManager
 from jobs import JobsController
+from config import BUCKET_NAME
 
 # Init typer
 app = typer.Typer()
@@ -18,8 +19,9 @@ stack_manager = StackManager(cf_client)
 
 # Initialize jobs controller
 s3_client = boto3.client("s3")
+bucket = boto3.resource("s3").Bucket(BUCKET_NAME)
 batch_client = boto3.client("batch")
-jobs_controller = JobsController(s3_client, batch_client)
+jobs_controller = JobsController(s3_client, bucket, batch_client)
 
 
 # Define commands
@@ -107,6 +109,17 @@ def describe_job(job_id: str = typer.Argument(...)):
     for batch_job in job.children.values():
         typer.echo(f"{batch_job.frame}\t{batch_job.status.ljust(10)}\t{batch_job.name}")
 
+
+@app.command()
+def delete_job(job_id: str = typer.Argument(...)):
+    """Cancel and delete a specific job"""
+
+    job = jobs_controller.get_job(job_id)
+
+    if job is None:
+        typer.echo(f"No job found with id: {job_id}", color=typer.colors.RED)
+
+    jobs_controller.delete_job(job)
 
 
 if __name__ == "__main__":
