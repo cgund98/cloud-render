@@ -5,21 +5,23 @@ from bpy.types import PropertyGroup, Operator, Panel
 from bpy.props import StringProperty, PointerProperty
 import bpy
 
-from cloud_render.creds import save_creds, load_creds, valid_creds
+from cloud_render.creds import save_creds, valid_creds
 from .base import CloudRender_BasePanel
 
 class CloudRender_CloudCredsProps(PropertyGroup):
     """Properties for credentials inputs"""
 
+    region: StringProperty(name="AWS Region")
     access_key_id: StringProperty(name="Access Key ID")
     secret_access_key: StringProperty(name="Secret Access Key")
+
 
 class CloudRender_SetCredentials(Operator):
     bl_idname = "render.set_aws_credentials"
     bl_label = "Reset AWS Creds"
 
     def execute(self, context):
-        props = bpy.context.scene.CloudCredsProps
+        props = context.scene.CloudCredsProps
 
         if props.access_key_id == "" and props.secret_access_key == "":
             self.report({'INFO'}, f"Reset credentials.")
@@ -27,7 +29,7 @@ class CloudRender_SetCredentials(Operator):
             self.report({'INFO'}, f"Saved credentials.")
         
         # Save to FS
-        save_creds(props.access_key_id, props.secret_access_key)
+        save_creds(props.access_key_id, props.secret_access_key, props.region)
 
         props.access_key_id = ""
         props.secret_access_key = ""
@@ -57,11 +59,17 @@ class CloudRender_CredentialsPanel(CloudRender_BasePanel, Panel):
         # Check if credentials are set
         if not valid_creds():
             props = bpy.context.scene.CloudCredsProps
-            key_id_row = self.layout.row()
-            key_id_row.prop(props, "access_key_id", text="Access Key ID")
 
-            secret_key_row = self.layout.row()
-            secret_key_row.prop(props, "secret_access_key", text="Secret Access Key")
+            inputs_row = self.layout.split(factor=0.3, align=True)
+            labels_col = inputs_row.column()
+            labels_col.label(text="AWS Region")
+            labels_col.label(text="Access Key ID")
+            labels_col.label(text="Secret Access Key")
+
+            inputs_col = inputs_row.column()
+            inputs_col.prop(props, "region", text="")
+            inputs_col.prop(props, "access_key_id", text="")
+            inputs_col.prop(props, "secret_access_key", text="")
 
             row = self.layout.row()
             row.operator_context = 'INVOKE_DEFAULT'
