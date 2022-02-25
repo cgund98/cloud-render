@@ -1,18 +1,25 @@
 """
-Blender user interfaces are defined here.
+Blender UI components related to saving AWS credentials
 """
+from bpy.types import PropertyGroup, Operator, Panel
+from bpy.props import StringProperty, PointerProperty
 import bpy
 
 from cloud_render.creds import save_creds, load_creds, valid_creds
+from .base import CloudRender_BasePanel
+
+class CloudRender_CloudCredsProps(PropertyGroup):
+    """Properties for credentials inputs"""
+
+    access_key_id: StringProperty(name="Access Key ID")
+    secret_access_key: StringProperty(name="Secret Access Key")
 
 
-class CloudRender_CloudCredsProps(bpy.types.PropertyGroup):
+def set_job_enum(self, value: str) -> None:
+    print(value)
+    return None
 
-    access_key_id: bpy.props.StringProperty(name="Access Key ID")
-    secret_access_key: bpy.props.StringProperty(name="Secret Access Key")
-
-
-class CloudRender_SetCredentials(bpy.types.Operator):
+class CloudRender_SetCredentials(Operator):
     bl_idname = "render.set_aws_credentials"
     bl_label = "Register AWS Creds"
 
@@ -30,31 +37,7 @@ class CloudRender_SetCredentials(bpy.types.Operator):
 
         return {'FINISHED'}
 
-
-class CloudRender_BasePanel:
-    """Base class for base panels"""
-
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "render"
-
-class CloudRender_PrimaryPanel(CloudRender_BasePanel, bpy.types.Panel):
-    """Primary panel in the Render settings section of the Properties space"""
-
-    bl_label = "Cloud Render"
-
-    def draw(self, context):
-        """Render UI components"""
-
-        layout = self.layout
-
-        lines = [f"What's up bro",]
-
-        for line in lines:
-            layout.label(text=line)
-
-
-class CloudRender_CredentialsPanel(CloudRender_BasePanel, bpy.types.Panel):
+class CloudRender_CredentialsPanel(CloudRender_BasePanel, Panel):
     """Subpanel that shows options for authenticating to AWS"""
 
     bl_parent_id = "CloudRender_PrimaryPanel"
@@ -83,29 +66,27 @@ class CloudRender_CredentialsPanel(CloudRender_BasePanel, bpy.types.Panel):
             row = self.layout.row()
 
 
-blender_classes = (
+classes = (
     CloudRender_CloudCredsProps,
     CloudRender_SetCredentials,
-    CloudRender_PrimaryPanel,
     CloudRender_CredentialsPanel,
 )
 
+def register():
+    """Register blender UI components"""
 
-def register_elements():
-    """Register UI elements"""
-
-    for cls in blender_classes:
+    for cls in classes:
         bpy.utils.register_class(cls)
 
     # Register CloudCredsProps
-    bpy.types.Scene.CloudCredsProps = bpy.props.PointerProperty(type=CloudRender_CloudCredsProps)
+    bpy.types.Scene.CloudCredsProps = PointerProperty(type=CloudRender_CloudCredsProps)
 
 
-def unregister_elements():
-    """Unregister UI elements"""
+def unregister():
+    """Unregister blender UI components"""
 
-    for cls in blender_classes:
+    for cls in classes:
         bpy.utils.unregister_class(cls)
 
-    # Unregister CloudCredsProps
-    del(bpy.types.Scene.CloudCredsProps)
+    # Register CloudCredsProps
+    del bpy.types.Scene.CloudCredsProps
