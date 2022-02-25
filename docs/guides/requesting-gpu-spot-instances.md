@@ -13,7 +13,7 @@ AWS sets limits on the number of spot instances any account can request. This is
 You can view your account's limits in the "Limits" page of the EC2 dashboard.
 
 ## Requesting increase in GPU quotas
-Unfortunately, the limit on requests GPU instances are 0 by default, so you will have to request a limit increase.
+Unfortunately, the limit on requests GPU instances are 0 by default, so you will have to request a limit increase. At the time of writing this, I was unable to have my limit increases approved :(. It seems even AWS can't get ahold of enough GPUs in these shortages.
 
 1. Open up https://console.aws.amazon.com/support/home#/case/create?issueType=service-limit-increase&limitType=service-code-ec2-spot-instances.
 2. You should now see a form for requesting a limit increase. We will make two requests here on for `G` instances and another for `P`. For each request:

@@ -26,7 +26,7 @@ from cloud_render.config import (
     STATUS_SUCCEEDED,
     STATUS_RUNNING,
 )
-from utils import DateTimeEncoder
+from cloud_render.utils import DateTimeEncoder
 
 # Maximum number of times to try and generate a new unique ID before raising an error
 MAX_TRIES = 5

@@ -14,20 +14,17 @@ class CloudRender_CloudCredsProps(PropertyGroup):
     access_key_id: StringProperty(name="Access Key ID")
     secret_access_key: StringProperty(name="Secret Access Key")
 
-
-def set_job_enum(self, value: str) -> None:
-    print(value)
-    return None
-
 class CloudRender_SetCredentials(Operator):
     bl_idname = "render.set_aws_credentials"
-    bl_label = "Register AWS Creds"
+    bl_label = "Reset AWS Creds"
 
     def execute(self, context):
-        cur_creds = load_creds()
-        self.report({'INFO'}, f"Saved credentials.")
-
         props = bpy.context.scene.CloudCredsProps
+
+        if props.access_key_id == "" and props.secret_access_key == "":
+            self.report({'INFO'}, f"Reset credentials.")
+        else:
+            self.report({'INFO'}, f"Saved credentials.")
         
         # Save to FS
         save_creds(props.access_key_id, props.secret_access_key)
@@ -37,10 +34,20 @@ class CloudRender_SetCredentials(Operator):
 
         return {'FINISHED'}
 
+    def invoke(self, context, event):
+        """If credentials are valid, add a confirmation to delete them"""
+
+        if valid_creds():
+            return context.window_manager.invoke_confirm(self, event)
+
+        return self.execute(context)
+        
+
+
 class CloudRender_CredentialsPanel(CloudRender_BasePanel, Panel):
     """Subpanel that shows options for authenticating to AWS"""
 
-    bl_parent_id = "CloudRender_PrimaryPanel"
+    bl_parent_id = "cloud_render_primary_panel"
     bl_label = "AWS Credentials"
     bl_options = {"HEADER_LAYOUT_EXPAND"}
 
@@ -57,6 +64,7 @@ class CloudRender_CredentialsPanel(CloudRender_BasePanel, Panel):
             secret_key_row.prop(props, "secret_access_key", text="Secret Access Key")
 
             row = self.layout.row()
+            row.operator_context = 'INVOKE_DEFAULT'
             row.operator(CloudRender_SetCredentials.bl_idname, text="Set AWS Credentials")
         
         # Hide inputs otherwise

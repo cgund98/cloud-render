@@ -3,7 +3,7 @@ bl_info = {
     "author": "Callum Gundlach",
     "version": (0, 1, 0),
     "blender": (3, 0, 1),
-    "location": "View3D > Sidebar > Example Tab",
+    "location": "Properties > Render Settings > Cloud Render",
     "description": "Add-on that launches your own render farm on AWS",
     "warning": "Requires installation of dependencies",
     "support": "COMMUNITY",

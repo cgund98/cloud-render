@@ -10,7 +10,7 @@ from .base import CloudRender_BasePanel
 class CloudRender_JobsPanel(CloudRender_BasePanel, Panel):
     """Subpanel that shows current jobs"""
 
-    bl_parent_id = "CloudRender_PrimaryPanel"
+    bl_parent_id = "cloud_render_primary_panel"
     bl_label = "Jobs"
 
     def draw(self, context):
