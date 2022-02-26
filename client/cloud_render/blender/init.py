@@ -32,6 +32,7 @@ def init_stack_manager() -> StackManager:
     common_args = dict(aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key, region_name=region)
 
     cf_client = boto3.client("cloudformation", **common_args)
-    stack_manager = StackManager(cf_client)
+    bucket = boto3.resource("s3", **common_args).Bucket(BUCKET_NAME)
+    stack_manager = StackManager(cf_client, bucket)
 
     return stack_manager

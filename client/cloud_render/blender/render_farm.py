@@ -14,6 +14,14 @@ from .base import CloudRender_BasePanel
 
 stack_manager: Optional[StackManager] = None
 
+# Constants
+NOT_DEPLOYED = "NOT_DEPLOYED"
+DELETE_IN_PROGRESS = "DELETE_IN_PROGRESS"
+CREATE_COMPLETE = "CREATE_COMPLETE"
+UPDATE_COMPLETE = "UPDATE_COMPLETE"
+READY = "READY"
+UNKNOWN = "UNKNOWN"
+
 
 class CloudRender_DeployFarm(Operator):
     bl_idname = "render.deploy_render_farm"
@@ -34,7 +42,38 @@ class CloudRender_DeployFarm(Operator):
 
         self.report({'INFO'}, f"Deployed render farm.")
 
+        bpy.ops.render.refresh_render_farm_status()
+
         return {'FINISHED'}
+
+
+class CloudRender_DeleteFarm(Operator):
+    bl_idname = "render.delete_render_farm"
+    bl_label = "Shut Down"
+    bl_description = "Shut down the active render farm."
+
+    @classmethod
+    def poll(cls, context):
+        return valid_creds
+
+    def execute(self, context):
+        # Init stack manager if not already
+        global stack_manager
+        if stack_manager is None:
+            stack_manager = init_stack_manager()
+
+        stack_manager.delete()
+
+        self.report({'INFO'}, f"Deleted render farm. Please wait for resources to be removed.")
+
+        bpy.ops.render.refresh_render_farm_status()
+
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        """Add a confirmation dialog"""
+
+        return context.window_manager.invoke_confirm(self, event)
 
 
 class CloudRender_RefreshFarmStatus(Operator):
@@ -48,7 +87,11 @@ class CloudRender_RefreshFarmStatus(Operator):
         if stack_manager is None:
             stack_manager = init_stack_manager()
 
-        context.scene.farm_status = stack_manager.get().status
+        stack = stack_manager.get()
+        if stack is None:
+            context.scene.farm_status = NOT_DEPLOYED
+        else:
+            context.scene.farm_status = stack.status
         
         self.report({'INFO'}, f"Refreshed render farm status.")
 
@@ -65,21 +108,48 @@ class CloudRender_RenderFarmPanel(CloudRender_BasePanel, Panel):
     def draw(self, context):
         """Render UI components"""
 
+        row = self.layout.row()
+        row.label(text="Check the status of, deploy, or shut down you render farm.")
+
+
         # Check if credentials are set
         if not valid_creds():
-            self.layout.row().label(text="Save AWS credentials to view.")
+            row = self.layout.row()
+            row.label(text="Save AWS credentials to view.")
             return
 
-        else:
-            row = self.layout.row()
-            row.label(text=f"Deployment Status: {context.scene.farm_status}")
+        # Read render farm status
+        status = context.scene.farm_status
+        if status in (CREATE_COMPLETE, UPDATE_COMPLETE):
+            status = READY
+        elif status == "":
+            status = UNKNOWN
 
+        # Status label
         row = self.layout.row()
-        row.operator(CloudRender_RefreshFarmStatus.bl_idname, text="Refresh")
+        row.label(text=f"Farm Status: {status}")
+
+        # Operators
+        row = self.layout.row()
+        split = self.layout.split(factor=0.5)
+
+        col = split.column()
+        col.operator(CloudRender_RefreshFarmStatus.bl_idname, text="Refresh", icon="FILE_REFRESH")
+
+        col = split.column()
+        if status == UNKNOWN:
+            return
+        elif status == NOT_DEPLOYED:
+            col.operator(CloudRender_DeployFarm.bl_idname, icon="ADD")
+        elif status != DELETE_IN_PROGRESS:
+            col.operator(CloudRender_DeleteFarm.bl_idname, icon="X")
+        
+
 
 
 classes = (
     CloudRender_DeployFarm,
+    CloudRender_DeleteFarm,
     CloudRender_RefreshFarmStatus,
     CloudRender_RenderFarmPanel,
 )

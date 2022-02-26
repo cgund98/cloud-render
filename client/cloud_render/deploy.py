@@ -2,7 +2,7 @@
 Logic pertaining to managing the CloudFormation deployment.
 """
 
-from typing import Sequence, Optional
+from typing import Sequence, Optional, Any
 import os
 
 from mypy_boto3_cloudformation import CloudFormationClient
@@ -34,11 +34,13 @@ class StackManager:
 
     client: CloudFormationClient
     stack_name: str
+    bucket: Any
     parameters: Sequence[ParameterTypeDef]
 
-    def __init__(self, client: CloudFormationClient):
+    def __init__(self, client: CloudFormationClient, bucket: Any):
         self.client = client
         self.stack_name = f"cloud-render-{DEPLOYMENT}"
+        self.bucket = bucket
 
         # Stack parameters
         self.parameters = [
@@ -133,6 +135,11 @@ class StackManager:
 
         typer.echo(f"Will delete stack {self.stack_name}...")
 
+        # Remove artifacts from bucket
+        typer.echo("Removing artifacts...")
+        self.bucket.objects.all().delete()
+
+        # Delete cloud formation
         self.client.delete_stack(StackName=self.stack_name)
 
     def get(self) -> Optional[Stack]:

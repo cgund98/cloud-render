@@ -15,11 +15,11 @@ app = typer.Typer()
 
 # Initialize stack manager
 cf_client = boto3.client("cloudformation")
-stack_manager = StackManager(cf_client)
+bucket = boto3.resource("s3").Bucket(BUCKET_NAME)
+stack_manager = StackManager(cf_client, bucket)
 
 # Initialize jobs controller
 s3_client = boto3.client("s3")
-bucket = boto3.resource("s3").Bucket(BUCKET_NAME)
 batch_client = boto3.client("batch")
 jobs_controller = JobsController(s3_client, bucket, batch_client)
 

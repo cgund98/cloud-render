@@ -16,13 +16,6 @@ class CloudRender_PrimaryPanel(base.CloudRender_BasePanel, Panel):
     def draw(self, context):
         """Render UI components"""
 
-        layout = self.layout
-
-        lines = [f"What's up bro",]
-
-        for line in lines:
-            layout.label(text=line)
-
 
 blender_classes = (
     CloudRender_PrimaryPanel,

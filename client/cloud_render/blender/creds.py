@@ -19,6 +19,7 @@ class CloudRender_CloudCredsProps(PropertyGroup):
 class CloudRender_SetCredentials(Operator):
     bl_idname = "render.set_aws_credentials"
     bl_label = "Reset AWS Creds"
+    bl_description = "Set or reset AWS credentials. Required for further cloud render steps."
 
     def execute(self, context):
         props = context.scene.CloudCredsProps
@@ -60,8 +61,12 @@ class CloudRender_CredentialsPanel(CloudRender_BasePanel, Panel):
         if not valid_creds():
             props = bpy.context.scene.CloudCredsProps
 
+            row = self.layout.row()
+            row.label(text="Please enter your AWS credentials.")
+
             inputs_row = self.layout.split(factor=0.3, align=True)
             labels_col = inputs_row.column()
+            labels_col.alignment = 'RIGHT'
             labels_col.label(text="AWS Region")
             labels_col.label(text="Access Key ID")
             labels_col.label(text="Secret Access Key")
@@ -77,6 +82,9 @@ class CloudRender_CredentialsPanel(CloudRender_BasePanel, Panel):
         
         # Hide inputs otherwise
         else:
+            row = self.layout.row()
+            row.label(text="Credentials currently saved.")
+
             row = self.layout.row()
             row.operator(CloudRender_SetCredentials.bl_idname, text="Reset Credentials")
             row = self.layout.row()
