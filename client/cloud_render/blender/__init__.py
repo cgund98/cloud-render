@@ -7,7 +7,7 @@ import bpy
 from . import jobs, render_farm, creds, base
 
 
-class CloudRender_PrimaryPanel(base.CloudRender_BasePanel, Panel):
+class CloudRender_PT_PrimaryPanel(base.CloudRender_BasePanel, Panel):
     """Primary panel in the Render settings section of the Properties space"""
 
     bl_idname="cloud_render_primary_panel"
@@ -18,7 +18,7 @@ class CloudRender_PrimaryPanel(base.CloudRender_BasePanel, Panel):
 
 
 blender_classes = (
-    CloudRender_PrimaryPanel,
+    CloudRender_PT_PrimaryPanel,
 )
 
 

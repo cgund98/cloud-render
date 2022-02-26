@@ -16,12 +16,16 @@ class CloudRender_CloudCredsProps(PropertyGroup):
     secret_access_key: StringProperty(name="Secret Access Key")
 
 
-class CloudRender_SetCredentials(Operator):
+class CloudRender_OT_SetCredentials(Operator):
+    """Set AWS credentials and save to disk"""
+
     bl_idname = "render.set_aws_credentials"
     bl_label = "Reset AWS Creds"
     bl_description = "Set or reset AWS credentials. Required for further cloud render steps."
 
     def execute(self, context):
+        """Execute the operator."""
+
         props = context.scene.CloudCredsProps
 
         if props.access_key_id == "" and props.secret_access_key == "":
@@ -47,12 +51,12 @@ class CloudRender_SetCredentials(Operator):
         
 
 
-class CloudRender_CredentialsPanel(CloudRender_BasePanel, Panel):
+class CloudRender_PT_CredentialsPanel(CloudRender_BasePanel, Panel):
     """Subpanel that shows options for authenticating to AWS"""
 
     bl_parent_id = "cloud_render_primary_panel"
     bl_label = "AWS Credentials"
-    bl_options = {"HEADER_LAYOUT_EXPAND"}
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         """Render UI components"""
@@ -78,7 +82,7 @@ class CloudRender_CredentialsPanel(CloudRender_BasePanel, Panel):
 
             row = self.layout.row()
             row.operator_context = 'INVOKE_DEFAULT'
-            row.operator(CloudRender_SetCredentials.bl_idname, text="Set AWS Credentials")
+            row.operator(CloudRender_OT_SetCredentials.bl_idname, text="Set AWS Credentials")
         
         # Hide inputs otherwise
         else:
@@ -86,14 +90,14 @@ class CloudRender_CredentialsPanel(CloudRender_BasePanel, Panel):
             row.label(text="Credentials currently saved.")
 
             row = self.layout.row()
-            row.operator(CloudRender_SetCredentials.bl_idname, text="Reset Credentials")
+            row.operator(CloudRender_OT_SetCredentials.bl_idname, text="Reset Credentials", icon="X")
             row = self.layout.row()
 
 
 classes = (
     CloudRender_CloudCredsProps,
-    CloudRender_SetCredentials,
-    CloudRender_CredentialsPanel,
+    CloudRender_OT_SetCredentials,
+    CloudRender_PT_CredentialsPanel,
 )
 
 def register():

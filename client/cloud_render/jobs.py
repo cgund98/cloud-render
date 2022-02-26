@@ -125,6 +125,13 @@ class JobsController:
         for frame_num in range(start_frame, end_frame + 1):
             name = f"render-job-{job_id}-frame-{frame_num}"
             params = dict(frame=str(frame_num), job=job_id)
+            retry_strategy = dict(
+                attempts=3,
+                evaluateOnExit=[
+                    dict(onStatusReason="Host EC2*", action="RETRY"),
+                    dict(onReason="*", action="EXIT"),
+                ],
+            )
 
             # Make request
             response = self.batch_client.submit_job(
@@ -132,6 +139,7 @@ class JobsController:
                 jobQueue=job_queue,
                 jobDefinition=job_def,
                 parameters=params,
+                retryStrategy=retry_strategy,
             )
 
             # Create pydantic model

@@ -11,7 +11,7 @@ DEPLOYMENT = env.get("DEPLOYMENT", "dev")
 VERSION = env.get("VERSION", "test")
 
 # Minimum resource requirements
-MIN_CPUS = "4"
+MIN_CPUS = "0"
 
 # Instance Types
 GPU_INSTANCE_TYPES = "g4dn,p2,p3"

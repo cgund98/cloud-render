@@ -95,7 +95,7 @@ Parameters:
 
   MinimumVCPUs:
     Type: Number
-    Default: 4
+    Default: 0
     Description: The minimum number of EC2 vCPUs that an environment should maintain
 
   MinimumGPUVCPUs:
