@@ -4,10 +4,11 @@ Logic pertaining to creating and managing jobs.
 
 from typing import Dict, Optional, List, Any
 from datetime import datetime
+from pathlib import Path
 import json
 import random
 import string
-import pathlib
+import os
 
 from mypy_boto3_s3 import S3Client
 from mypy_boto3_batch import BatchClient
@@ -184,7 +185,7 @@ class JobsController:
             start_frame=start_frame,
             end_frame=end_frame,
             gpu=gpu,
-            file_name=pathlib.Path(blend_path).name,
+            file_name=Path(blend_path).name,
             status=STATUS_RUNNING,
         )
         self.state[job.job_id] = job
@@ -325,3 +326,25 @@ class JobsController:
 
         # Persist state
         self._persist_state()
+
+    def sync_files(self, job: Job, output_path: str) -> None:
+        """Sync a job's files to local disk."""
+
+        # Fetch all objects belonging to a specific job
+        job_path = f"jobs/{job.job_id}"
+        job_objects = self.bucket.objects.filter(Prefix=job_path)
+
+        # Download each non-blend object
+        for obj in job_objects:
+            if obj.key.split('.')[-1] != "blend":
+                # Determine output path
+                obj_subpath = obj.key.split(job_path+"/")[1]
+                output_file = Path(output_path) / Path(obj_subpath)
+                print(output_file)
+
+                # Create directory if it does not exist
+                if not os.path.exists(str(output_file.parent)):
+                    os.makedirs(str(output_file.parent))
+
+                # Download file
+                self.bucket.download_file(obj.key, str(output_file))

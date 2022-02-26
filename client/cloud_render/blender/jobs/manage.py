@@ -2,13 +2,14 @@
 UI components for managing existing render jobs.
 """
 from typing import Optional
+from pathlib import Path
 
 from bpy.types import PropertyGroup, Panel, UIList, Operator
-from bpy.props import StringProperty, CollectionProperty, IntProperty
+from bpy.props import StringProperty, CollectionProperty, IntProperty, PointerProperty
 import bpy
 
 from cloud_render.creds import valid_creds
-from cloud_render.config import STATUS_ERROR, STATUS_RUNNING, STATUS_SUCCEEDED
+from cloud_render.config import STATUS_ERROR, STATUS_SUCCEEDED
 from cloud_render.jobs import Job
 from ..init import init_jobs_controller
 from ..base import CloudRender_BasePanel
@@ -16,7 +17,8 @@ from ..base import CloudRender_BasePanel
 last_id: Optional[str] = None
 cur_job: Optional[Job] = None
 
-def job_handler(self, context):
+
+def job_handler(_, context):
     """Handle changes to the active job"""
     global cur_job
     scene = context.scene
@@ -34,6 +36,58 @@ def job_handler(self, context):
         cur_job = jobs_controller.get_job(cur_item.id)
 
 
+class CloudRender_SyncJobProps(PropertyGroup):
+    """Job syncing inputs"""
+
+    output_path: StringProperty(name="Output", description="Output directory to save cloud render files to.",
+        default="", maxlen=1024, subtype="DIR_PATH")
+
+
+class CloudRender_OT_SyncJobFiles(Operator):
+    """Operator that will sync a cloud render job's files locally"""
+
+    bl_idname = "render.sync_cloud_job_files"
+    bl_label = "Download Files"
+    bl_description = "Download job output files to local disk."
+
+    @classmethod
+    def poll(cls, context):
+        """Validate operator conditions."""
+        scene = context.scene
+
+        return valid_creds() and scene.sync_inputs.output_path
+
+    def execute(self, context):
+        """Execute the operator."""
+
+        scene = context.scene
+
+        # Init the jobs controller
+        jobs_controller = init_jobs_controller()
+
+        # Find absolute path of specified outputs
+        output_path = context.scene.sync_inputs.output_path
+        if output_path[:2] == "//":
+            blend_path = Path(bpy.data.filepath).parent
+            output_path = str(blend_path / Path(output_path[2:]))
+
+        # Fetch file
+        active_job = scene.jobs_list[scene.jobs_index]
+        job = jobs_controller.get_job(active_job.id)
+
+        # Sync files
+        jobs_controller.sync_files(job, output_path)
+
+        self.report({'INFO'}, f"Synced files to {output_path}.")
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        """Add a confirmation dialog"""
+
+        return context.window_manager.invoke_confirm(self, event)
+
+
 class CloudRender_OT_DeleteJob(Operator):
     """Operator that will delete the selected cloud render job."""
 
@@ -43,6 +97,7 @@ class CloudRender_OT_DeleteJob(Operator):
     
     @classmethod
     def poll(cls, context):
+        """Validate operator conditions."""
         scene = context.scene
 
         return valid_creds() and scene.jobs_index >= 0 and scene.jobs_list
@@ -53,9 +108,6 @@ class CloudRender_OT_DeleteJob(Operator):
 
         # Init the jobs controller
         jobs_controller = init_jobs_controller()
-
-        # Fetch active jobs
-        jobs = jobs_controller.list_jobs()
 
         # Set id of current job, so we can set list index to same job after resetting list
         active_job = scene.jobs_list[scene.jobs_index]
@@ -90,6 +142,7 @@ class CloudRender_OT_RefreshJobs(Operator):
     
     @classmethod
     def poll(cls, _):
+        """Validate operator conditions."""
         return valid_creds()
 
     def execute(self, context):
@@ -121,6 +174,9 @@ class CloudRender_OT_RefreshJobs(Operator):
 
         scene.jobs_index = new_index
 
+        # Refresh current job
+        global last_id
+        last_id = None
         job_handler(self, context)
         
         self.report({'INFO'}, f"Refreshed jobs status.")
@@ -160,49 +216,61 @@ class CloudRender_PT_ManageJobsPanel(CloudRender_BasePanel, Panel):
         col.operator(CloudRender_OT_DeleteJob.bl_idname, text="Delete Job", icon="TRASH")
 
         # Job Details
-        if scene.jobs_index >= 0 and scene.jobs_list:
+        if not scene.jobs_index >= 0 or not scene.jobs_list or not cur_job:
+            return
 
-            # Ensure we have a current job fetched from backend
-            if not cur_job:
-                return
+        split = self.layout.row().split(factor=0.5)
+        labels_col = split.column()
+        labels_col.alignment = "RIGHT"
+        values_col = split.column()
 
-            split = self.layout.row().split(factor=0.5)
-            labels_col = split.column()
-            labels_col.alignment = "RIGHT"
-            values_col = split.column()
+        # Job metadata
+        labels_col.label(text="Job ID:")
+        values_col.label(text=cur_job.job_id)
 
-            # Job metadata
-            labels_col.label(text="Job ID:")
-            values_col.label(text=cur_job.job_id)
+        labels_col.label(text="Blend file:")
+        values_col.label(text=cur_job.file_name)
 
-            labels_col.label(text="Blend file:")
-            values_col.label(text=cur_job.file_name)
+        labels_col.label(text="Created At:")
+        values_col.label(text=cur_job.creation_date.strftime("%m/%d/%Y %H:%M:%S"))
 
-            labels_col.label(text="Job Status:")
-            values_col.label(text=cur_job.status)
+        if cur_job.completion_date is not None:
+            duration = (cur_job.completion_date - cur_job.creation_date).total_seconds() // 60
+            labels_col.label(text="Duration:")
+            values_col.label(text=f"{int(duration)} mins")
 
-            # Calculate frame stats
-            finished_frames = 0
-            failed_frames = 0
-            running_frames = 0
-            total_frames = cur_job.end_frame - cur_job.start_frame + 1
+        labels_col.label(text="Job Status:")
+        values_col.label(text=cur_job.status)
 
-            for batch_job in cur_job.children.values():
-                if batch_job.status == "RUNNING":
-                    running_frames += 1
-                elif batch_job.status == "SUCCEEDED":
-                    finished_frames += 1
-                elif batch_job.status == "FAILED":
-                    failed_frames += 1
+        # Calculate frame stats
+        finished_frames = 0
+        failed_frames = 0
+        running_frames = 0
+        total_frames = cur_job.end_frame - cur_job.start_frame + 1
 
-            labels_col.label(text="Completed Frames:")
-            values_col.label(text=f"{finished_frames}/{total_frames}")
-            
-            labels_col.label(text="Failed Frames:")
-            values_col.label(text=f"{failed_frames}/{total_frames}")
+        for batch_job in cur_job.children.values():
+            if batch_job.status == "RUNNING":
+                running_frames += 1
+            elif batch_job.status == "SUCCEEDED":
+                finished_frames += 1
+            elif batch_job.status == "FAILED":
+                failed_frames += 1
 
-            labels_col.label(text="Running Frames:")
-            values_col.label(text=f"{running_frames}")
+        labels_col.label(text="Completed Frames:")
+        values_col.label(text=f"{finished_frames}/{total_frames}")
+        
+        labels_col.label(text="Failed Frames:")
+        values_col.label(text=f"{failed_frames}/{total_frames}")
+
+        labels_col.label(text="Running Frames:")
+        values_col.label(text=f"{running_frames}")
+
+        # Sync files operator
+        props = scene.sync_inputs
+        row = self.layout.row()
+        split = self.layout.row().split(factor=0.5)
+        split.column().prop(props, "output_path", text="Output Path")
+        split.column().operator(CloudRender_OT_SyncJobFiles.bl_idname, icon="TRIA_DOWN_BAR")
 
 
 class CloudRender_JobListItem(PropertyGroup):
@@ -240,9 +308,11 @@ class CloudRender_UL_JobList(UIList):
 classes = (
     CloudRender_OT_DeleteJob,
     CloudRender_OT_RefreshJobs,
+    CloudRender_OT_SyncJobFiles,
+    CloudRender_SyncJobProps,
     CloudRender_PT_ManageJobsPanel,
     CloudRender_JobListItem,
-    CloudRender_UL_JobList
+    CloudRender_UL_JobList,
 )
 
 def register():
@@ -253,6 +323,7 @@ def register():
 
     bpy.types.Scene.jobs_list = CollectionProperty(type=CloudRender_JobListItem)
     bpy.types.Scene.jobs_index = IntProperty(name="Index for jobs_list", default=0, update=job_handler)
+    bpy.types.Scene.sync_inputs = PointerProperty(type=CloudRender_SyncJobProps)
 
 
 def unregister():
@@ -263,3 +334,4 @@ def unregister():
 
     del bpy.types.Scene.jobs_list
     del bpy.types.Scene.jobs_index
+    del bpy.types.Scene.sync_inputs

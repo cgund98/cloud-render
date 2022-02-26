@@ -23,6 +23,7 @@ class CloudRender_OT_CreateJob(Operator):
 
     @classmethod
     def poll(cls, _):
+        """Validate operator conditions."""
         return valid_creds() and bpy.data.filepath
 
     def execute(self, context):

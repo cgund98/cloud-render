@@ -28,6 +28,7 @@ class CloudRender_OT_DeployFarm(Operator):
 
     @classmethod
     def poll(cls, _):
+        """Validate operator conditions."""
         return valid_creds()
 
     def execute(self, _):
@@ -50,6 +51,7 @@ class CloudRender_OT_DeleteFarm(Operator):
     
     @classmethod
     def poll(cls, _):
+        """Validate operator conditions."""
         return valid_creds()
 
     def execute(self, _):
@@ -77,6 +79,7 @@ class CloudRender_OT_RefreshFarmStatus(Operator):
     
     @classmethod
     def poll(cls, _):
+        """Validate operator conditions."""
         return valid_creds()
 
     def execute(self, context):
