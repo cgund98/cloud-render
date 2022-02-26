@@ -8,6 +8,7 @@ import bpy
 from cloud_render.creds import valid_creds
 from ..init import init_jobs_controller
 from ..base import CloudRender_BasePanel
+from ..render_farm import CREATE_COMPLETE, UPDATE_COMPLETE
 
 class CloudRender_CloudCreateJobProps(PropertyGroup):
     """Properties for credentials inputs"""
@@ -57,6 +58,8 @@ class CloudRender_OT_CreateJob(Operator):
         else:
             self.report({'INFO'}, f"Created render job for frames #{start_frame} to #{end_frame}")
 
+        bpy.ops.render.refresh_cloud_jobs()
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -75,7 +78,7 @@ class CloudRender_PT_NewJobPanel(CloudRender_BasePanel, Panel):
         """Render UI components"""
 
         # Ensure creds are set
-        if not valid_creds():
+        if not valid_creds() or context.scene.farm_status not in (CREATE_COMPLETE, UPDATE_COMPLETE):
             return
 
         scene = context.scene
@@ -92,9 +95,6 @@ class CloudRender_PT_NewJobPanel(CloudRender_BasePanel, Panel):
 
         row = self.layout.row()
         row.operator(CloudRender_OT_CreateJob.bl_idname, text="Create job")
-
-        
-
 
 
 classes = (

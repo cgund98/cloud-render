@@ -13,6 +13,7 @@ from cloud_render.config import STATUS_ERROR, STATUS_SUCCEEDED
 from cloud_render.jobs import Job
 from ..init import init_jobs_controller
 from ..base import CloudRender_BasePanel
+from ..render_farm import CREATE_COMPLETE, UPDATE_COMPLETE
 
 last_id: Optional[str] = None
 cur_job: Optional[Job] = None
@@ -196,7 +197,7 @@ class CloudRender_PT_ManageJobsPanel(CloudRender_BasePanel, Panel):
         global cur_job
 
         # Ensure creds are set
-        if not valid_creds():
+        if not valid_creds() or context.scene.farm_status not in (CREATE_COMPLETE, UPDATE_COMPLETE):
             return
 
         scene = context.scene

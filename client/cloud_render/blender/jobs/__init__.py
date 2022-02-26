@@ -5,6 +5,7 @@ from bpy.types import Panel
 import bpy
 
 from ..base import CloudRender_BasePanel
+from ..render_farm import CREATE_COMPLETE, UPDATE_COMPLETE
 from . import manage, new
 
 class CloudRender_PT_JobsPanel(CloudRender_BasePanel, Panel):
@@ -16,6 +17,9 @@ class CloudRender_PT_JobsPanel(CloudRender_BasePanel, Panel):
 
     def draw(self, context):
         """Render UI components"""
+
+        if context.scene.farm_status not in (CREATE_COMPLETE, UPDATE_COMPLETE):
+            self.layout.row().label(text="Please check render farm status.")
 
 
 classes = (

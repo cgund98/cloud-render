@@ -2,13 +2,20 @@
 Application configuration.
 """
 
-from os import environ as env
+from os import path
+from pathlib import Path
+import configparser
+
+# Read config file
+script_path = path.dirname(path.realpath(__file__))
+config = configparser.ConfigParser()
+config.read(str(Path(script_path) / Path("config.ini")))
 
 # Deployment type (E.g. "dev", "test", "prod")
-DEPLOYMENT = env.get("DEPLOYMENT", "dev")
+DEPLOYMENT = config['default']['Deployment']
 
 # Deployment version
-VERSION = env.get("VERSION", "test")
+VERSION = config['default']['Version']
 
 # Minimum resource requirements
 MIN_CPUS = "0"
