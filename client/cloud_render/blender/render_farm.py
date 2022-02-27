@@ -7,8 +7,8 @@ from bpy.types import Operator, Panel
 from bpy.props import StringProperty
 import bpy
 
-from cloud_render.creds import valid_creds
-from cloud_render.deploy import StackManager
+from ..creds import valid_creds
+from ..deploy import StackManager
 from .init import init_stack_manager
 from .base import CloudRender_BasePanel
 
@@ -37,18 +37,18 @@ class CloudRender_OT_DeployFarm(Operator):
 
         stack_manager.create_or_update()
 
-        self.report({'INFO'}, f"Deployed render farm.")
+        self.report({"INFO"}, f"Deployed render farm.")
 
         bpy.ops.render.refresh_render_farm_status()
 
-        return {'FINISHED'}
+        return {"FINISHED"}
 
 
 class CloudRender_OT_DeleteFarm(Operator):
     bl_idname = "render.delete_render_farm"
     bl_label = "Shut Down"
     bl_description = "Shut down the active render farm."
-    
+
     @classmethod
     def poll(cls, _):
         """Validate operator conditions."""
@@ -60,11 +60,11 @@ class CloudRender_OT_DeleteFarm(Operator):
 
         stack_manager.delete()
 
-        self.report({'INFO'}, f"Deleted render farm. Please wait for resources to be removed.")
+        self.report({"INFO"}, f"Deleted render farm. Please wait for resources to be removed.")
 
         bpy.ops.render.refresh_render_farm_status()
 
-        return {'FINISHED'}
+        return {"FINISHED"}
 
     def invoke(self, context, event):
         """Add a confirmation dialog"""
@@ -76,7 +76,7 @@ class CloudRender_OT_RefreshFarmStatus(Operator):
     bl_idname = "render.refresh_render_farm_status"
     bl_label = "Refresh"
     bl_description = "Refresh the status of the current deployed render farm."
-    
+
     @classmethod
     def poll(cls, _):
         """Validate operator conditions."""
@@ -91,10 +91,10 @@ class CloudRender_OT_RefreshFarmStatus(Operator):
             context.scene.farm_status = NOT_DEPLOYED
         else:
             context.scene.farm_status = stack.status
-        
-        self.report({'INFO'}, f"Refreshed render farm status.")
 
-        return {'FINISHED'}
+        self.report({"INFO"}, f"Refreshed render farm status.")
+
+        return {"FINISHED"}
 
 
 class CloudRender_PT_RenderFarmPanel(CloudRender_BasePanel, Panel):
@@ -109,7 +109,6 @@ class CloudRender_PT_RenderFarmPanel(CloudRender_BasePanel, Panel):
 
         row = self.layout.row()
         row.label(text="Check the status of, deploy, or shut down you render farm.")
-
 
         # Check if credentials are set
         if not valid_creds():
@@ -133,7 +132,11 @@ class CloudRender_PT_RenderFarmPanel(CloudRender_BasePanel, Panel):
         split = self.layout.split(factor=0.5)
 
         col = split.column()
-        col.operator(CloudRender_OT_RefreshFarmStatus.bl_idname, text="Refresh", icon="FILE_REFRESH")
+        col.operator(
+            CloudRender_OT_RefreshFarmStatus.bl_idname,
+            text="Refresh",
+            icon="FILE_REFRESH",
+        )
 
         col = split.column()
         if status == UNKNOWN:
@@ -142,7 +145,7 @@ class CloudRender_PT_RenderFarmPanel(CloudRender_BasePanel, Panel):
             col.operator(CloudRender_OT_DeployFarm.bl_idname, icon="ADD")
         elif status != DELETE_IN_PROGRESS:
             col.operator(CloudRender_OT_DeleteFarm.bl_idname, icon="X")
-        
+
 
 classes = (
     CloudRender_OT_DeployFarm,
@@ -150,6 +153,7 @@ classes = (
     CloudRender_OT_RefreshFarmStatus,
     CloudRender_PT_RenderFarmPanel,
 )
+
 
 def register():
     """Register blender UI components"""

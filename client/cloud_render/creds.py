@@ -5,7 +5,7 @@ from typing import Tuple
 import os
 import json
 
-from cloud_render.config import CREDS_FILE_NAME
+from .config import CREDS_FILE_NAME
 
 # Script path is where credentials will be saved
 script_path = os.path.dirname(os.path.realpath(__file__))
@@ -32,7 +32,7 @@ def load_creds() -> Tuple[str, str, str]:
 
     # Check if file exists
     if not os.path.exists(creds_path):
-        return None, None
+        return None, None, None
 
     # Read file
     with open(creds_path, "r") as creds_file:

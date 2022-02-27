@@ -8,9 +8,9 @@ from bpy.types import PropertyGroup, Panel, UIList, Operator
 from bpy.props import StringProperty, CollectionProperty, IntProperty, PointerProperty
 import bpy
 
-from cloud_render.creds import valid_creds
-from cloud_render.config import STATUS_ERROR, STATUS_SUCCEEDED
-from cloud_render.jobs import Job
+from ...creds import valid_creds
+from ...config import STATUS_ERROR, STATUS_SUCCEEDED
+from ...jobs import Job
 from ..init import init_jobs_controller
 from ..base import CloudRender_BasePanel
 from ..render_farm import CREATE_COMPLETE, UPDATE_COMPLETE
@@ -40,8 +40,13 @@ def job_handler(_, context):
 class CloudRender_SyncJobProps(PropertyGroup):
     """Job syncing inputs"""
 
-    output_path: StringProperty(name="Output", description="Output directory to save cloud render files to.",
-        default="", maxlen=1024, subtype="DIR_PATH")
+    output_path: StringProperty(
+        name="Output",
+        description="Output directory to save cloud render files to.",
+        default="",
+        maxlen=1024,
+        subtype="DIR_PATH",
+    )
 
 
 class CloudRender_OT_SyncJobFiles(Operator):
@@ -79,7 +84,7 @@ class CloudRender_OT_SyncJobFiles(Operator):
         # Sync files
         jobs_controller.sync_files(job, output_path)
 
-        self.report({'INFO'}, f"Synced files to {output_path}.")
+        self.report({"INFO"}, f"Synced files to {output_path}.")
 
         return {"FINISHED"}
 
@@ -95,7 +100,7 @@ class CloudRender_OT_DeleteJob(Operator):
     bl_idname = "render.delete_cloud_job"
     bl_label = "Delete"
     bl_description = "Cancel/delete selected render job."
-    
+
     @classmethod
     def poll(cls, context):
         """Validate operator conditions."""
@@ -116,17 +121,17 @@ class CloudRender_OT_DeleteJob(Operator):
         # Check that current job exists
         job = jobs_controller.get_job(active_job.id)
         if job is None:
-            return {'ERROR'}
+            return {"ERROR"}
 
         # Delete job
         jobs_controller.delete_job(job)
 
         # Refresh jobs
         bpy.ops.render.refresh_cloud_jobs()
-        
-        self.report({'INFO'}, f"Deleted selected job.")
 
-        return {'FINISHED'}
+        self.report({"INFO"}, f"Deleted selected job.")
+
+        return {"FINISHED"}
 
     def invoke(self, context, event):
         """Add a confirmation dialog"""
@@ -140,7 +145,7 @@ class CloudRender_OT_RefreshJobs(Operator):
     bl_idname = "render.refresh_cloud_jobs"
     bl_label = "Refresh"
     bl_description = "Refresh the list of current available jobs"
-    
+
     @classmethod
     def poll(cls, _):
         """Validate operator conditions."""
@@ -160,7 +165,7 @@ class CloudRender_OT_RefreshJobs(Operator):
         cur_job_id, new_index = None, 0
         if scene.jobs_index >= 0 and scene.jobs_list:
             cur_job_id = scene.jobs_list[scene.jobs_index].id
-        
+
         # Populate jobs list
         context.scene.jobs_list.clear()
         for i, job in enumerate(jobs):
@@ -179,10 +184,10 @@ class CloudRender_OT_RefreshJobs(Operator):
         global last_id
         last_id = None
         job_handler(self, context)
-        
-        self.report({'INFO'}, f"Refreshed jobs status.")
 
-        return {'FINISHED'}
+        self.report({"INFO"}, f"Refreshed jobs status.")
+
+        return {"FINISHED"}
 
 
 class CloudRender_PT_ManageJobsPanel(CloudRender_BasePanel, Panel):
@@ -197,7 +202,10 @@ class CloudRender_PT_ManageJobsPanel(CloudRender_BasePanel, Panel):
         global cur_job
 
         # Ensure creds are set
-        if not valid_creds() or context.scene.farm_status not in (CREATE_COMPLETE, UPDATE_COMPLETE):
+        if not valid_creds() or context.scene.farm_status not in (
+            CREATE_COMPLETE,
+            UPDATE_COMPLETE,
+        ):
             return
 
         scene = context.scene
@@ -259,7 +267,7 @@ class CloudRender_PT_ManageJobsPanel(CloudRender_BasePanel, Panel):
 
         labels_col.label(text="Completed Frames:")
         values_col.label(text=f"{finished_frames}/{total_frames}")
-        
+
         labels_col.label(text="Failed Frames:")
         values_col.label(text=f"{failed_frames}/{total_frames}")
 
@@ -289,20 +297,20 @@ class CloudRender_UL_JobList(UIList):
         """Render list item"""
 
         # Use a custom icon
-        icon = 'REC'
+        icon = "REC"
         if item.status == STATUS_SUCCEEDED:
-            icon = 'CHECKMARK'
+            icon = "CHECKMARK"
         elif item.status == STATUS_ERROR:
-            icon = 'ORPHAN_DATA'
+            icon = "ORPHAN_DATA"
 
         # List text
         text = f"{item.id} ({item.file_name})"
 
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+        if self.layout_type in {"DEFAULT", "COMPACT"}:
             layout.label(text=text, icon=icon)
 
-        elif self.layout_type in {'GRID'}:
-            layout.alignment = 'CENTER'
+        elif self.layout_type in {"GRID"}:
+            layout.alignment = "CENTER"
             layout.label(text=text, icon=icon)
 
 
@@ -315,6 +323,7 @@ classes = (
     CloudRender_JobListItem,
     CloudRender_UL_JobList,
 )
+
 
 def register():
     """Register blender UI components"""

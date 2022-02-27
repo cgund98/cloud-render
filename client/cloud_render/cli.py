@@ -6,9 +6,9 @@ import os
 import typer
 import boto3
 
-from cloud_render.deploy import StackManager
-from cloud_render.jobs import JobsController
-from cloud_render.config import BUCKET_NAME
+from .deploy import StackManager
+from .jobs import JobsController
+from .config import BUCKET_NAME
 
 # Init typer
 app = typer.Typer()

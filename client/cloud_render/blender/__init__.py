@@ -10,16 +10,14 @@ from . import jobs, render_farm, creds, base
 class CloudRender_PT_PrimaryPanel(base.CloudRender_BasePanel, Panel):
     """Primary panel in the Render settings section of the Properties space"""
 
-    bl_idname="cloud_render_primary_panel"
+    bl_idname = "cloud_render_primary_panel"
     bl_label = "Cloud Render"
 
     def draw(self, context):
         """Render UI components"""
 
 
-blender_classes = (
-    CloudRender_PT_PrimaryPanel,
-)
+blender_classes = (CloudRender_PT_PrimaryPanel,)
 
 
 def register_elements():

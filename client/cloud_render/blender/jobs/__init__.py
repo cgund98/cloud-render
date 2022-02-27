@@ -8,6 +8,7 @@ from ..base import CloudRender_BasePanel
 from ..render_farm import CREATE_COMPLETE, UPDATE_COMPLETE
 from . import manage, new
 
+
 class CloudRender_PT_JobsPanel(CloudRender_BasePanel, Panel):
     """Subpanel that shows current jobs"""
 
@@ -22,9 +23,8 @@ class CloudRender_PT_JobsPanel(CloudRender_BasePanel, Panel):
             self.layout.row().label(text="Please check render farm status.")
 
 
-classes = (
-    CloudRender_PT_JobsPanel,
-)
+classes = (CloudRender_PT_JobsPanel,)
+
 
 def register():
     """Register blender UI components"""

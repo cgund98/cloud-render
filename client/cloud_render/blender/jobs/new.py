@@ -5,15 +5,20 @@ from bpy.types import Panel, Operator, PropertyGroup
 from bpy.props import BoolProperty, PointerProperty
 import bpy
 
-from cloud_render.creds import valid_creds
+from ...creds import valid_creds
 from ..init import init_jobs_controller
 from ..base import CloudRender_BasePanel
 from ..render_farm import CREATE_COMPLETE, UPDATE_COMPLETE
 
+
 class CloudRender_CloudCreateJobProps(PropertyGroup):
     """Properties for credentials inputs"""
 
-    animation: BoolProperty(name="Render Animation", description="If true, render entire animation. Otherwise, render the current frame.")
+    animation: BoolProperty(
+        name="Render Animation",
+        description="If true, render entire animation. Otherwise, render the current frame.",
+    )
+
 
 class CloudRender_OT_CreateJob(Operator):
     """Operator that will create a new render job."""
@@ -56,11 +61,14 @@ class CloudRender_OT_CreateJob(Operator):
         if start_frame == end_frame:
             self.report({"INFO"}, f"Created render job for single frame #{start_frame}")
         else:
-            self.report({'INFO'}, f"Created render job for frames #{start_frame} to #{end_frame}")
+            self.report(
+                {"INFO"},
+                f"Created render job for frames #{start_frame} to #{end_frame}",
+            )
 
         bpy.ops.render.refresh_cloud_jobs()
 
-        return {'FINISHED'}
+        return {"FINISHED"}
 
     def invoke(self, context, event):
         """Add a confirmation dialog"""
@@ -78,7 +86,10 @@ class CloudRender_PT_NewJobPanel(CloudRender_BasePanel, Panel):
         """Render UI components"""
 
         # Ensure creds are set
-        if not valid_creds() or context.scene.farm_status not in (CREATE_COMPLETE, UPDATE_COMPLETE):
+        if not valid_creds() or context.scene.farm_status not in (
+            CREATE_COMPLETE,
+            UPDATE_COMPLETE,
+        ):
             return
 
         scene = context.scene
@@ -86,9 +97,9 @@ class CloudRender_PT_NewJobPanel(CloudRender_BasePanel, Panel):
         # Form inputs
         split = self.layout.split(factor=0.5)
         labels_col = split.column()
-        labels_col.alignment = 'RIGHT'
+        labels_col.alignment = "RIGHT"
         labels_col.label(text="Render Animation")
-        
+
         props = bpy.context.scene.CloudCreateJobProps
         inputs_col = split.column()
         inputs_col.prop(props, "animation", text="")
@@ -102,6 +113,7 @@ classes = (
     CloudRender_OT_CreateJob,
     CloudRender_CloudCreateJobProps,
 )
+
 
 def register():
     """Register blender UI components"""

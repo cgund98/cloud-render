@@ -16,7 +16,7 @@ from pydantic import BaseModel
 import botocore
 import typer
 
-from cloud_render.config import (
+from .config import (
     JOBS_STATE_FILE,
     BUCKET_NAME,
     JOB_DEF_CPU,
@@ -27,7 +27,7 @@ from cloud_render.config import (
     STATUS_SUCCEEDED,
     STATUS_RUNNING,
 )
-from cloud_render.utils import DateTimeEncoder
+from .utils import DateTimeEncoder
 
 # Maximum number of times to try and generate a new unique ID before raising an error
 MAX_TRIES = 5
@@ -227,7 +227,10 @@ class JobsController:
         # Iterate over chunks of 100 jobs maximum (limited by AWS)
         cur_chunk, chunk_size = 0, 100
         while cur_chunk < (len(children) // chunk_size) + 1:
-            chunk_start, chunk_end = cur_chunk * chunk_size, (cur_chunk + 1) * chunk_size
+            chunk_start, chunk_end = (
+                cur_chunk * chunk_size,
+                (cur_chunk + 1) * chunk_size,
+            )
 
             # Request batch of jobs
             response = self.batch_client.describe_jobs(jobs=job_ids[chunk_start:chunk_end])
@@ -265,7 +268,13 @@ class JobsController:
                 ran_into_error = True
 
             # Check if job is still running
-            if batch_job.status in ("SUBMITTED", "PENDING", "RUNNABLE", "STARTING", "RUNNING"):
+            if batch_job.status in (
+                "SUBMITTED",
+                "PENDING",
+                "RUNNABLE",
+                "STARTING",
+                "RUNNING",
+            ):
                 running = True
 
             # Set completion time
@@ -336,9 +345,9 @@ class JobsController:
 
         # Download each non-blend object
         for obj in job_objects:
-            if obj.key.split('.')[-1] != "blend":
+            if obj.key.split(".")[-1] != "blend":
                 # Determine output path
-                obj_subpath = obj.key.split(job_path+"/")[1]
+                obj_subpath = obj.key.split(job_path + "/")[1]
                 output_file = Path(output_path) / Path(obj_subpath)
                 print(output_file)
 

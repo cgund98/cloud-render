@@ -1,3 +1,10 @@
+import bpy
+import os
+import sys
+import subprocess
+import importlib
+from collections import namedtuple
+
 bl_info = {
     "name": "Cloud Render",
     "author": "Callum Gundlach",
@@ -7,14 +14,10 @@ bl_info = {
     "description": "Add-on that launches your own render farm on AWS",
     "warning": "Requires installation of dependencies",
     "support": "COMMUNITY",
-    "category": "Render"}
-
-import bpy
-import os
-import sys
-import subprocess
-import importlib
-from collections import namedtuple
+    "wiki_url": "https://github.com/cgund98/cloud-render",
+    "tracker_url": "https://github.com/cgund98/cloud-render/issues",
+    "category": "Render",
+}
 
 Dependency = namedtuple("Dependency", ["module", "package", "name"])
 
@@ -102,7 +105,11 @@ def install_and_import_module(module_name, package_name=None, global_name=None):
     environ_copy = dict(os.environ)
     environ_copy["PYTHONNOUSERSITE"] = "1"
 
-    subprocess.run([sys.executable, "-m", "pip", "install", package_name], check=True, env=environ_copy)
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", package_name],
+        check=True,
+        env=environ_copy,
+    )
 
     # The installation succeeded, attempt to import the module again
     import_module(module_name, global_name)
@@ -113,9 +120,11 @@ class InstallDependenciesOperator(bpy.types.Operator):
 
     bl_idname = "cloud_render.install_dependencies"
     bl_label = "Install dependencies"
-    bl_description = ("Downloads and installs the required python packages for this add-on. "
-                      "Internet connection is required. Blender may have to be started with "
-                      "elevated permissions in order to install the package")
+    bl_description = (
+        "Downloads and installs the required python packages for this add-on. "
+        "Internet connection is required. Blender may have to be started with "
+        "elevated permissions in order to install the package"
+    )
     bl_options = {"REGISTER", "INTERNAL"}
 
     @classmethod
@@ -127,9 +136,11 @@ class InstallDependenciesOperator(bpy.types.Operator):
         try:
             install_pip()
             for dependency in dependencies:
-                install_and_import_module(module_name=dependency.module,
-                                          package_name=dependency.package,
-                                          global_name=dependency.name)
+                install_and_import_module(
+                    module_name=dependency.module,
+                    package_name=dependency.package,
+                    global_name=dependency.name,
+                )
         except (subprocess.CalledProcessError, ImportError) as err:
             self.report({"ERROR"}, str(err))
             return {"CANCELLED"}
@@ -138,7 +149,8 @@ class InstallDependenciesOperator(bpy.types.Operator):
         dependencies_installed = True
 
         # Register the panels, operators, etc. since dependencies are installed
-        from cloud_render.blender import register_elements
+        from .blender import register_elements
+
         register_elements()
 
         return {"FINISHED"}
@@ -154,7 +166,7 @@ class Preferences(bpy.types.AddonPreferences):
         layout.operator(InstallDependenciesOperator.bl_idname, icon="CONSOLE")
 
 
-preference_classes = (Preferences)
+preference_classes = Preferences
 
 
 def register():
@@ -173,13 +185,13 @@ def register():
             import_module(module_name=dependency.module, global_name=dependency.name)
         dependencies_installed = True
 
-        
     except ModuleNotFoundError:
         # Don't register other panels, operators etc.
         return
 
     # Register other elements
-    from cloud_render.blender import register_elements
+    from .blender import register_elements
+
     register_elements()
 
 
@@ -192,7 +204,8 @@ def unregister():
 
     # Unregister other elements
     if dependencies_installed:
-        from cloud_render.blender import unregister_elements
+        from .blender import unregister_elements
+
         unregister_elements()
 
 

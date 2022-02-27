@@ -12,10 +12,10 @@ config = configparser.ConfigParser()
 config.read(str(Path(script_path) / Path("config.ini")))
 
 # Deployment type (E.g. "dev", "test", "prod")
-DEPLOYMENT = config['default']['Deployment']
+DEPLOYMENT = config["default"]["Deployment"]
 
 # Deployment version
-VERSION = config['default']['Version']
+VERSION = config["default"]["Version"]
 
 # Minimum resource requirements
 MIN_CPUS = "0"
