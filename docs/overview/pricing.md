@@ -47,7 +47,7 @@ Compute: We want to render a single image that take an average of 30 minutes to 
 | Total | | | $2.30 + $5.03 = $7.33 per month |
 
 ## Caution
-In order to prevent any unexpected charges, it's recommended you keep an eye on your AWS charges and enable [billing alerts](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html#turning_on_billing_metrics).
+In order to prevent any unexpected charges, it's recommended you keep an eye on your [AWS charges](https://console.aws.amazon.com/cost-management/home?#/dashboard) and enable [billing alerts](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html#turning_on_billing_metrics).
 
 ### Request refunds
 If you somehow find a large sum of unexpected charges, try to get ahold of customer service and request a refund. They are known for being quite generous in this regard.
