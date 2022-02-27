@@ -9,7 +9,7 @@ from pathlib import Path
 import typer
 import boto3
 
-s3 = boto3.client('s3')
+s3 = boto3.client("s3")
 
 
 def pull_blend(job_name: str, bucket_name: str) -> str:
@@ -42,7 +42,7 @@ def save_results(job_name: str, bucket_name: str) -> int:
         if path.is_file() and path.name != "main.blend":
             typer.echo(f"Uploading file {path}...")
 
-            rel_path = str(path).split(job_path+"/")[1]
+            rel_path = str(path).split(job_path + "/")[1]
             s3.upload_file(str(path), bucket_name, f"jobs/{job_name}/{rel_path}")
 
             count += 1
@@ -67,7 +67,11 @@ def main(
     typer.echo("Rendering...")
 
     job_path = f"/cache/{job_name}"
-    subprocess.run(["blender", "-b", blend_path, "-o", "./out/frame_####", "-f", str(frame)], check=True, cwd=job_path)
+    subprocess.run(
+        ["blender", "-b", blend_path, "-o", "./out/frame_####", "-f", str(frame)],
+        check=True,
+        cwd=job_path,
+    )
 
     # Copy results back to S3
     save_count = save_results(job_name, bucket_name)

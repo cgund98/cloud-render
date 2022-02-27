@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# AWS CDK
+cdk.out
+
+# VS code
+.vscode
+
+# AWS creds
+**/creds.json

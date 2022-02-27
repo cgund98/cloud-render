@@ -1,0 +1,10 @@
+[MASTER]
+ignore=venv,docs
+
+disable=
+    too-few-public-methods,
+    no-name-in-module,
+    import-error
+
+[FORMAT]
+max-line-length=120
