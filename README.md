@@ -6,11 +6,11 @@
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Amazon AWS](https://img.shields.io/badge/Amazon_AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white)
 
-Are you stuck working on a potato PC? Unsuccessfully trying to use your workstation for other tasks while you render? Or maybe you just want to render overnight without falling asleep to coil whine.
+Are you stuck working on a potato PC? Want to use your workstation for other tasks while you render? Or maybe you just want to render overnight without falling asleep to coil whine.
 
-If any of those problems hit home, you may want to try processing your renders on **your own private render farm**!
+If any of those problems seem familiar, you may want to try processing your renders on **your own private render farm**!
 
-Cloud Render is a **free** add-on for blender that will enable you to easily deploy a render farm and run your rendering workloads in the cloud (AWS).
+Cloud Render is a **free** add-on for blender that enables you to easily deploy a render farm and run your rendering workloads in the cloud (AWS).
 
 ### Features
 * Render multiple blend files in parallel.
@@ -53,7 +53,6 @@ You can shut down a render farm at any time with the `Shut Down` button.
 
 _Note: you will have only one render farm across all your blend files._
 
-
 ### Create a new job
 Creating a new render job is quite simple inside the `Cloud Render > Jobs > New` panel.
 
@@ -74,7 +73,7 @@ Use the `Refresh` button to refresh the list of jobs as well as the details of t
 
 At any time, even when a job is not yet completed, you can pull its output files and save them locally. Do this by selecting an output directory and clicking the `Download Files` button.
 
-*Note: ensure your renders do not write anywhere outside of the same path as the blend file. All outputs should be within `//`.*
+*Note: ensure your renders do not write anywhere outside of the same path as the blend file. All render outputs should be under `//`. Anything outside of this path will not be recognized and downloaded.*
 
 Delete the selected job with the `Delete Job` button. This will remove all job files from the cloud permanently.
 
@@ -89,6 +88,16 @@ You could buy 3 dedicated rendering machines for your office, our you could rent
 
 ### How much does it cost?
 For more details on costs of running render jobs, please see the [pricing guide](./docs/overview/pricing.md).
+
+## Troubleshooting
+If you run into any problems using the add-on, please create a [new issue](https://github.com/cgund98/cloud-render/issues/new).
+
+### Deleting render farm manually
+If for whatever reason the add-on is not working or you want to be completely sure you aren't being charged for resources that are currently running, you need to delete the AWS resources manually.
+
+This is quite easy. Navigate to the "CloudFormation" service via the search menu. Make sure you have selected the same region in the top right of the window as you entered in the add-on panel. E.g. if you entered `us-east-2`, you should see "Ohio".
+
+In the "Stacks" tab, any resources created by the add-on will have a name starting with `cloud-render-`. If they exist, feel free to delete them. This should remove all resources by Cloud Render.
 
 ## Contributing
 Have any ideas for new features or improvements? Feel free to create an [issue](https://github.com/cgund98/cloud-render/issues/new), or simply implement the changes yourself!

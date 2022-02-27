@@ -25,31 +25,28 @@ When you aren't actively rendering something, you will only pay for S3 storage, 
 ## Examples
 
 ### Example 1
-Storage: Assume we will use a maximum of 50GB of storage for the month.
+Storage: We will use a maximum of 50GB of storage for the month.
 
-Render Job: Let's assume we have an animation of 120 frames that take an average of 15 minutes per frame to render. Let's assume we run this job 30 times per month.
+Compute: We have an animation of 120 frames that take an average of 15 minutes per frame to render. We run this job 30 times per month.
 
 | Charges   | Usage     | Rate      | Subtotal      |
 |-----------|-----------|-----------|---------------|
 | Storage (GB per month) | 50 GB * 1 month = 50 GB-months | $0.023 per GB-month  | 50 GB-months * $0.023 = $1.15 |
 | Compute instances | 30 jobs * 120 frames per job * 0.25 hours per frame / 20 frames at a time = 45 hours | $1 per hour | 45 hours * $1 = $45 |
-Total = $1.15 + $45 = $46.15 per month
+|Total | | | $1.15 + $45 = $46.15 per month |
 
 ### Example 2
-Storage: Assume we will use a maximum of 100GB of storage for the month.
+Storage: We will use a maximum of 100GB of storage for the month.
 
-Render Job: Let's assume we want to render a single image that take an average of 30 minutes to render. Let's assume we run this job 120 times per month.
-
-We will assume we aren't using the entire render queue, though it won't make any difference in pricing. We are only charged on the resources we actively use.
+Compute: We want to render a single image that take an average of 30 minutes to render. We run this job 120 times per month.
 
 | Charges   | Usage     | Rate      | Subtotal      |
 |-----------|-----------|-----------|---------------|
 | Storage (GB per month) | 100 GB * 1 month = 100 GB-months | $0.023 per GB-month  | 100 GB-months * $0.023 = $2.30 |
 | Compute instances | 120 jobs * 1 frame per job * 0.5 hours per frame = 60 hours | $0.0838 per hour | 60 hours * $0.0838 = $5.03 |
-Total = $2.30 + $5.03 = $7.33 per month
+| Total | | | $2.30 + $5.03 = $7.33 per month |
 
-
-## Warning
+## Caution
 In order to prevent any unexpected charges, it's recommended you keep an eye on your AWS charges and enable [billing alerts](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html#turning_on_billing_metrics).
 
 ### Request refunds
