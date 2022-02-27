@@ -23,7 +23,7 @@ def save_creds(aws_access_key_id: str, aws_secret_access_key: str, region: str) 
     }
 
     # Write credentials to local file system
-    with open(creds_path, "w") as creds_file:
+    with open(creds_path, "w", encoding="utf-8") as creds_file:
         json.dump(creds_obj, creds_file)
 
 
@@ -35,7 +35,7 @@ def load_creds() -> Tuple[str, str, str]:
         return None, None, None
 
     # Read file
-    with open(creds_path, "r") as creds_file:
+    with open(creds_path, "r", encoding="utf-8") as creds_file:
         creds_obj = json.load(creds_file)
 
     # Parse individual fields

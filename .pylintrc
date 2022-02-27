@@ -4,7 +4,9 @@ ignore=venv,docs
 disable=
     too-few-public-methods,
     no-name-in-module,
-    import-error
+    import-error,
+    global-statement,
+    invalid-name, # Blender conventions conflict with this
 
 [FORMAT]
 max-line-length=120

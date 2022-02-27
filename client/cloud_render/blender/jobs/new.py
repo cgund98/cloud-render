@@ -84,15 +84,11 @@ class CloudRender_PT_NewJobPanel(CloudRender_BasePanel, Panel):
 
     def draw(self, context):
         """Render UI components"""
+        scene = context.scene
 
         # Ensure creds are set
-        if not valid_creds() or context.scene.farm_status not in (
-            CREATE_COMPLETE,
-            UPDATE_COMPLETE,
-        ):
+        if not valid_creds() or scene.farm_status not in (CREATE_COMPLETE, UPDATE_COMPLETE):
             return
-
-        scene = context.scene
 
         # Form inputs
         split = self.layout.split(factor=0.5)
@@ -100,7 +96,7 @@ class CloudRender_PT_NewJobPanel(CloudRender_BasePanel, Panel):
         labels_col.alignment = "RIGHT"
         labels_col.label(text="Render Animation")
 
-        props = bpy.context.scene.CloudCreateJobProps
+        props = scene.CloudCreateJobProps
         inputs_col = split.column()
         inputs_col.prop(props, "animation", text="")
 

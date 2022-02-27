@@ -30,9 +30,9 @@ class CloudRender_OT_SetCredentials(Operator):
         props = context.scene.CloudCredsProps
 
         if props.access_key_id == "" and props.secret_access_key == "":
-            self.report({"INFO"}, f"Reset credentials.")
+            self.report({"INFO"}, "Reset credentials.")
         else:
-            self.report({"INFO"}, f"Saved credentials.")
+            self.report({"INFO"}, "Saved credentials.")
 
         # Save to FS
         save_creds(props.access_key_id, props.secret_access_key, props.region)
@@ -63,7 +63,7 @@ class CloudRender_PT_CredentialsPanel(CloudRender_BasePanel, Panel):
 
         # Check if credentials are set
         if not valid_creds():
-            props = bpy.context.scene.CloudCredsProps
+            props = context.scene.CloudCredsProps
 
             row = self.layout.row()
             row.label(text="Please enter your AWS credentials.")

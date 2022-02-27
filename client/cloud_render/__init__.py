@@ -1,4 +1,14 @@
+"""
+Entrypoint for blender add-on registration.
 
+Big thanks to Robert Gützkow for the code on installing pip dependencies inside of blender.
+See his example at https://github.com/robertguetzkow/blender-python-examples/tree/master/add_ons/install_dependencies.
+"""
+
+# pylint: disable=import-outside-toplevel
+
+# The try-except block is to allow the CLI to work, even when
+# being ran outside of blender.
 try:
     import bpy
     import os
@@ -23,10 +33,6 @@ try:
 
     Dependency = namedtuple("Dependency", ["module", "package", "name"])
 
-    # Declare all modules that this add-on depends on, that may need to be installed. The package and (global) name can be
-    # set to None, if they are equal to the module name. See import_module and ensure_and_import_module for the explanation
-    # of the arguments. DO NOT use this to import other parts of your Python add-on, import them as usual with an
-    # "import" statement.
     dependencies = (
         Dependency(module="boto3", package=None, name=None),
         Dependency(module="mypy_boto3_s3", package="boto3-stubs[essential]", name=None),
@@ -35,10 +41,9 @@ try:
         Dependency(module="typer", package=None, name=None),
     )
 
-    dependencies_installed = False
+    DEPENDENCIES_INSTALLED = False
 
-
-    def import_module(module_name, global_name=None, reload=True):
+    def import_module(module_name, global_name=None):
         """
         Import a module.
         :param module_name: Module to import.
@@ -57,15 +62,14 @@ try:
             # the given name, just like the regular import would.
             globals()[global_name] = importlib.import_module(module_name)
 
-
     def install_pip():
         """
         Installs pip if not already present. Please note that ensurepip.bootstrap() also calls pip, which adds the
-        environment variable PIP_REQ_TRACKER. After ensurepip.bootstrap() finishes execution, the directory doesn't exist
-        anymore. However, when subprocess is used to call pip, in order to install a package, the environment variables
-        still contain PIP_REQ_TRACKER with the now nonexistent path. This is a problem since pip checks if PIP_REQ_TRACKER
-        is set and if it is, attempts to use it as temp directory. This would result in an error because the
-        directory can't be found. Therefore, PIP_REQ_TRACKER needs to be removed from environment variables.
+        environment variable PIP_REQ_TRACKER. After ensurepip.bootstrap() finishes execution, the directory doesn't
+        exist anymore. However, when subprocess is used to call pip, in order to install a package, the environment
+        variables still contain PIP_REQ_TRACKER with the now nonexistent path. This is a problem since pip checks if
+        PIP_REQ_TRACKER is set and if it is, attempts to use it as temp directory. This would result in an error
+        because the directory can't be found. Therefore, PIP_REQ_TRACKER needs to be removed from environment vars.
         :return:
         """
 
@@ -78,13 +82,12 @@ try:
             ensurepip.bootstrap()
             os.environ.pop("PIP_REQ_TRACKER", None)
 
-
     def install_and_import_module(module_name, package_name=None, global_name=None):
         """
         Installs the package through pip and attempts to import the installed module.
         :param module_name: Module to import.
-        :param package_name: (Optional) Name of the package that needs to be installed. If None it is assumed to be equal
-        to the module_name.
+        :param package_name: (Optional) Name of the package that needs to be installed. If None it is assumed to be
+        equal to the module_name.
         :param global_name: (Optional) Name under which the module is imported. If None the module_name will be used.
         This allows to import under a different name with the same effect as e.g. "import numpy as np" where "np" is
         the global_name under which the module can be accessed.
@@ -96,12 +99,13 @@ try:
         if global_name is None:
             global_name = module_name
 
-        # Blender disables the loading of user site-packages by default. However, pip will still check them to determine
-        # if a dependency is already installed. This can cause problems if the packages is installed in the user
-        # site-packages and pip deems the requirement satisfied, but Blender cannot import the package from the user
-        # site-packages. Hence, the environment variable PYTHONNOUSERSITE is set to disallow pip from checking the user
-        # site-packages. If the package is not already installed for Blender's Python interpreter, it will then try to.
-        # The paths used by pip can be checked with `subprocess.run([bpy.app.binary_path_python, "-m", "site"], check=True)`
+        # Blender disables the loading of user site-packages by default. However, pip will still check them to
+        # determine if a dependency is already installed. This can cause problems if the packages is installed in the
+        # user site-packages and pip deems the requirement satisfied, but Blender cannot import the package from the
+        # user site-packages. Hence, the environment variable PYTHONNOUSERSITE is set to disallow pip from checking
+        # the user site-packages. If the package is not already installed for Blender's Python interpreter, it will
+        # then try to. The paths used by pip can be checked with
+        # `subprocess.run([bpy.app.binary_path_python, "-m", "site"], check=True)`.
 
         # Create a copy of the environment variables and modify them for the subprocess call
         environ_copy = dict(os.environ)
@@ -116,7 +120,6 @@ try:
         # The installation succeeded, attempt to import the module again
         import_module(module_name, global_name)
 
-
     class InstallDependenciesOperator(bpy.types.Operator):
         """Button in the settings menu to install pip dependencies."""
 
@@ -130,11 +133,17 @@ try:
         bl_options = {"REGISTER", "INTERNAL"}
 
         @classmethod
-        def poll(self, context):
-            # Deactivate when dependencies have been installed
-            return not dependencies_installed
+        def poll(cls, _):
+            """
+            Check if required conditions have been met.
 
-        def execute(self, context):
+            Deactivate when dependencies have been installed.
+            """
+
+            return not DEPENDENCIES_INSTALLED
+
+        def execute(self, _):
+            """Execute the operator."""
             try:
                 install_pip()
                 for dependency in dependencies:
@@ -147,8 +156,8 @@ try:
                 self.report({"ERROR"}, str(err))
                 return {"CANCELLED"}
 
-            global dependencies_installed
-            dependencies_installed = True
+            global DEPENDENCIES_INSTALLED
+            DEPENDENCIES_INSTALLED = True
 
             # Register the panels, operators, etc. since dependencies are installed
             from .blender import register_elements
@@ -157,25 +166,21 @@ try:
 
             return {"FINISHED"}
 
-
     class Preferences(bpy.types.AddonPreferences):
         """Preferences panel, holds the install dependencies button"""
 
         bl_idname = __name__
 
-        def draw(self, context):
+        def draw(self, _):
+            """Render UI components."""
             layout = self.layout
             layout.operator(InstallDependenciesOperator.bl_idname, icon="CONSOLE")
-
-
-    preference_classes = Preferences
-
 
     def register():
         """Register the add-on with blender"""
 
-        global dependencies_installed
-        dependencies_installed = False
+        global DEPENDENCIES_INSTALLED
+        DEPENDENCIES_INSTALLED = False
 
         # Register preferences elements
         bpy.utils.register_class(Preferences)
@@ -185,7 +190,7 @@ try:
         try:
             for dependency in dependencies:
                 import_module(module_name=dependency.module, global_name=dependency.name)
-            dependencies_installed = True
+            DEPENDENCIES_INSTALLED = True
 
         except ModuleNotFoundError:
             # Don't register other panels, operators etc.
@@ -196,7 +201,6 @@ try:
 
         register_elements()
 
-
     def unregister():
         """Remove the add-on from blender"""
 
@@ -205,7 +209,7 @@ try:
         bpy.utils.unregister_class(InstallDependenciesOperator)
 
         # Unregister other elements
-        if dependencies_installed:
+        if DEPENDENCIES_INSTALLED:
             from .blender import unregister_elements
 
             unregister_elements()
