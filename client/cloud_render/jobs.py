@@ -323,7 +323,7 @@ class JobsController:
         # Cancel children
         typer.echo("Cancelling batch jobs...")
         for batch_job in job.children.values():
-            self.batch_client.cancel_job(jobId=batch_job.batch_id, reason="Canceled by user.")
+            self.batch_client.terminate_job(jobId=batch_job.batch_id, reason="Canceled by user.")
 
         # Remove S3 directory
         typer.echo("Removing artifacts...")

@@ -56,10 +56,12 @@ _Note: you will have only one render farm across all your blend files._
 ### Create a new job
 Creating a new render job is quite simple inside the `Cloud Render > Jobs > New` panel.
 
-There is only one option, `Render Animation`. If unchecked, the job will only render the current frame. If checked, it will render the entire animation.
+There are two options:
+* `Render Animation`: If unchecked, the job will only render the current frame. If checked, it will render the entire animation.
+* `Pack Resources`: If checked, the add-on will pack all external resources inside your blend file. It's recommended to keep this checked if possible.
 
 When you are ready, click `Create job`. This will do a few things:
-1. Pack all external resources inside your blend file. This is the same as `File > External Data > Pack Resources`.
+1. If checked, pack all external resources inside your blend file. This is the same as `File > External Data > Pack Resources`.
 2. Save the blend file.
 3. Upload the blend file to the cloud.
 4. For every frame that will be rendered, create a "batch job". Your job will render one frame at a time in parallel.

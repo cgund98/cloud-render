@@ -19,6 +19,12 @@ class CloudRender_CloudCreateJobProps(PropertyGroup):
         description="If true, render entire animation. Otherwise, render the current frame.",
     )
 
+    pack_resources: BoolProperty(
+        name="Pack Resources",
+        description="If true, pack external resources into blend file.",
+        default=True,
+    )
+
 
 class CloudRender_OT_CreateJob(Operator):
     """Operator that will create a new render job."""
@@ -39,16 +45,17 @@ class CloudRender_OT_CreateJob(Operator):
         jobs_controller = init_jobs_controller()
 
         scene = context.scene
+        props = scene.CloudCreateJobProps
 
         # Pack resources
-        bpy.ops.file.pack_all()
-        file_path = bpy.data.filepath
+        if props.pack_resources:
+            bpy.ops.file.pack_all()
 
         # Save file
+        file_path = bpy.data.filepath
         bpy.ops.wm.save_mainfile()
 
         # Set start and end frames
-        props = scene.CloudCreateJobProps
         if props.animation:
             start_frame, end_frame = scene.frame_start, scene.frame_end
 
@@ -95,10 +102,12 @@ class CloudRender_PT_NewJobPanel(CloudRender_BasePanel, Panel):
         labels_col = split.column()
         labels_col.alignment = "RIGHT"
         labels_col.label(text="Render Animation")
+        labels_col.label(text="Pack Resources")
 
         props = scene.CloudCreateJobProps
         inputs_col = split.column()
         inputs_col.prop(props, "animation", text="")
+        inputs_col.prop(props, "pack_resources", text="")
 
         row = self.layout.row()
         row.operator(CloudRender_OT_CreateJob.bl_idname, text="Create job")
