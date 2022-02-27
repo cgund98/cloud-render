@@ -1,12 +1,12 @@
 """
-Initialize AWS client classes
+Initialize AWS client classes.
 """
 from typing import Optional
 
 import boto3
 
 from ..creds import load_creds
-from ..deploy import Stack, StackManager
+from ..deploy import StackManager
 from ..jobs import JobsController
 from ..config import BUCKET_NAME
 

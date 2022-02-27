@@ -1,6 +1,6 @@
 # Creating an AWS service account
 
-Creating a service account is probably the most difficult part of the installation process, but have no worries! This guide will walk you through the process step-by-step.
+Creating a service account is probably the most difficult part of the setup process, but have no worries! This guide will walk you through the process step-by-step.
 
 The steps can be summarized with:
 1. Logging into the AWS console.

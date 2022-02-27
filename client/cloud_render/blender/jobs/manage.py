@@ -129,7 +129,7 @@ class CloudRender_OT_DeleteJob(Operator):
         # Refresh jobs
         bpy.ops.render.refresh_cloud_jobs()
 
-        self.report({"INFO"}, f"Deleted selected job.")
+        self.report({"INFO"}, "Deleted selected job.")
 
         return {"FINISHED"}
 
@@ -185,7 +185,7 @@ class CloudRender_OT_RefreshJobs(Operator):
         last_id = None
         job_handler(self, context)
 
-        self.report({"INFO"}, f"Refreshed jobs status.")
+        self.report({"INFO"}, "Refreshed jobs.")
 
         return {"FINISHED"}
 
@@ -198,8 +198,6 @@ class CloudRender_PT_ManageJobsPanel(CloudRender_BasePanel, Panel):
 
     def draw(self, context):
         """Render UI components"""
-
-        global cur_job
 
         # Ensure creds are set
         if not valid_creds() or context.scene.farm_status not in (
